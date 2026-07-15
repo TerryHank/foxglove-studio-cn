@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+# Match the Linux installation behavior used by Lichtblick's Electron package:
+# expose the executable globally and make Chromium's sandbox usable.
+ln -sf '/opt/Foxglove-Studio-CN/foxglove-studio-cn' '/usr/bin/foxglove-studio-cn'
+chmod 4755 '/opt/Foxglove-Studio-CN/chrome-sandbox' || true
+update-mime-database /usr/share/mime || true
+update-desktop-database /usr/share/applications || true
