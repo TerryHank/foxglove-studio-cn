@@ -61,6 +61,7 @@ function installChineseMenu() {
 function createWindow() {
   const window = new BrowserWindow({
     title: APP_NAME,
+    icon: path.join(__dirname, "build", "icon.png"),
     width: 1440,
     height: 900,
     minWidth: 960,

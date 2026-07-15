@@ -17,7 +17,7 @@
 从本仓库 Releases 下载 ARM64 `.deb`，然后执行：
 
 ```bash
-sudo apt install ./foxglove-studio-cn_1.86.0-cn.2_arm64.deb
+sudo apt install ./foxglove-studio-cn_1.86.0-cn.3_arm64.deb
 foxglove-studio-cn
 ```
 
@@ -35,7 +35,7 @@ chmod +x build-desktop-cn.sh desktop-cn/build/linux/deb/postinst
 生成的软件包位于：
 
 ```text
-desktop-cn/dist/foxglove-studio-cn_1.86.0-cn.2_arm64.deb
+desktop-cn/dist/foxglove-studio-cn_1.86.0-cn.3_arm64.deb
 ```
 
 ## 汉化审计
