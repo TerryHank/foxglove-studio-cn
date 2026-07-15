@@ -2551,7 +2551,7 @@ __metadata:
     "@foxglove/three-text": 0.2.2
     "@foxglove/tsconfig": 2.0.0
     "@foxglove/typescript-transformers": "workspace:*"
-    "@foxglove/ulog": 2.1.2
+    "@foxglove/ulog": 2.3.2
     "@foxglove/velodyne-cloud": 1.0.1
     "@foxglove/wasm-bz2": 0.1.1
     "@foxglove/wasm-lz4": 1.0.2
@@ -2756,10 +2756,10 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@foxglove/ulog@npm:2.1.2":
-  version: 2.1.2
-  resolution: "@foxglove/ulog@npm:2.1.2"
-  checksum: 5014a871a13e3acaeba7fc8d7db16937f1936e6bef827f10800b254a9bedd56faa939347479ee88412967789d8680e74f375cc82acb21aae39bbbfa3f21a2444
+"@foxglove/ulog@npm:2.3.2":
+  version: 2.3.2
+  resolution: "@foxglove/ulog@npm:2.3.2"
+  checksum: 1b075197267d870f175fb87b3d42837d22c4cd4c5126b045923d7d31be49e4a5df92336830c9eb89fb849e60d2b9556b351aa543fe9aed177be6ea5b1630ee37
   languageName: node
   linkType: hard
 
