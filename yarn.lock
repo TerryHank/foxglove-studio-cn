@@ -2332,7 +2332,7 @@ __metadata:
     "@foxglove/message-definition": 0.3.1
     "@foxglove/omgidl-parser": 1.0.3
     "@foxglove/omgidl-serialization": 1.0.3
-    "@foxglove/ros2idl-parser": 0.3.2
+    "@foxglove/ros2idl-parser": 0.3.6
     "@foxglove/rosmsg": 4.2.2
     "@foxglove/rosmsg-serialization": 2.0.2
     "@foxglove/rosmsg2-serialization": 2.0.3
@@ -2365,6 +2365,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@foxglove/message-definition@npm:^0.5.0":
+  version: 0.5.0
+  resolution: "@foxglove/message-definition@npm:0.5.0"
+  checksum: 79c3c3acf91020096b19c6d7602e10211ee45afb17b8d70a4d93794aade5dd4929b5c7a127b3f58c2230358414c410128c1f46e1daa4e8ea937b36b9c235bfce
+  languageName: node
+  linkType: hard
+
 "@foxglove/message-path@workspace:*, @foxglove/message-path@workspace:packages/message-path":
   version: 0.0.0-use.local
   resolution: "@foxglove/message-path@workspace:packages/message-path"
@@ -2385,6 +2392,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@foxglove/omgidl-parser@npm:1.2.2":
+  version: 1.2.2
+  resolution: "@foxglove/omgidl-parser@npm:1.2.2"
+  dependencies:
+    tslib: ^2
+  checksum: b50cc7ebc5de46d883759387a7d15eee136e466db55b79b726a360220264699840284a497f6a1494d0f24d997a94d43ef4bd3968f68b28281ad247cec41d17a2
+  languageName: node
+  linkType: hard
+
 "@foxglove/omgidl-serialization@npm:1.0.3":
   version: 1.0.3
   resolution: "@foxglove/omgidl-serialization@npm:1.0.3"
@@ -2395,14 +2411,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@foxglove/ros2idl-parser@npm:0.3.2":
-  version: 0.3.2
-  resolution: "@foxglove/ros2idl-parser@npm:0.3.2"
+"@foxglove/ros2idl-parser@npm:0.3.6":
+  version: 0.3.6
+  resolution: "@foxglove/ros2idl-parser@npm:0.3.6"
   dependencies:
-    "@foxglove/message-definition": ^0.3.1
-    "@foxglove/omgidl-parser": 1.0.3
+    "@foxglove/message-definition": ^0.5.0
+    "@foxglove/omgidl-parser": 1.2.2
     md5-typescript: ^1.0.5
-  checksum: 9ad981467a441798142106eca23d32d3da11878141f59379d66c01e6d1a61c79e0d47e776b0864fa281193b64c6eaf8752df502d0fdea9aac0a89982f0061594
+  checksum: 398ede56b65cf918109303c8e32bf515c19ce84c087aa49f9b00772ccf88018fff6f5979d2357cc22817835fc9edde9ede046397434332279c1a52c1c6c8d8a3
   languageName: node
   linkType: hard
 
