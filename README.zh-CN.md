@@ -48,4 +48,4 @@ node scripts/audit-zh-translations.mjs
 
 ## 许可证与上游
 
-本仓库保留原项目的 MPL-2.0 许可证和提交历史。Foxglove、ROS、MCAP、WebSocket 等品牌名和协议名保持原文。
+本仓库以完整源码快照发布，并保留原项目的 MPL-2.0 许可证、NOTICE 和上游来源说明。Foxglove、ROS、MCAP、WebSocket 等品牌名和协议名保持原文。
