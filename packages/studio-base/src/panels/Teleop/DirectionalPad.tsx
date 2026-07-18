@@ -65,6 +65,16 @@ const useStyles = makeStyles<void, "buttonIcon">()((theme, _params, classes) => 
       fill: theme.palette.background.default,
     },
   },
+  stopLabel: {
+    pointerEvents: "none",
+    fontSize: 17,
+    fontWeight: 700,
+    fill: theme.palette.text.primary,
+
+    "&.disabled": {
+      fill: theme.palette.text.disabled,
+    },
+  },
 }));
 
 export enum DirectionalPadAction {
@@ -72,6 +82,7 @@ export enum DirectionalPadAction {
   DOWN,
   LEFT,
   RIGHT,
+  STOP,
 }
 
 type DirectionalPadProps = {
@@ -188,6 +199,22 @@ function DirectionalPad(props: DirectionalPadProps): JSX.Element {
               d="M225.43,127.854l-20,20l0,-40l20,20Z"
             />
           </g>
+        </g>
+
+        {/* STOP button */}
+        <g {...makeMouseHandlers(DirectionalPadAction.STOP)} role="button" aria-label="停止">
+          <circle
+            className={cx(classes.button, {
+              active: currentAction === DirectionalPadAction.STOP,
+              disabled,
+            })}
+            cx="128"
+            cy="128"
+            r="42"
+          />
+          <text className={cx(classes.stopLabel, { disabled })} x="128" y="134" textAnchor="middle">
+            停止
+          </text>
         </g>
       </svg>
     </Stack>
