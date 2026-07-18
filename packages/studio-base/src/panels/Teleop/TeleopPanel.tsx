@@ -16,6 +16,7 @@ import {
 } from "@foxglove/studio";
 import EmptyState from "@foxglove/studio-base/components/EmptyState";
 import Stack from "@foxglove/studio-base/components/Stack";
+import useGlobalVariables from "@foxglove/studio-base/hooks/useGlobalVariables";
 import ThemeProvider from "@foxglove/studio-base/theme/ThemeProvider";
 
 import DirectionalPad, { DirectionalPadAction } from "./DirectionalPad";
@@ -36,6 +37,7 @@ const geometryMsgOptions = [
 type Config = {
   topic: undefined | string;
   publishRate: number;
+  speedVariableName: undefined | string;
   upButton: { field: string; value: number };
   downButton: { field: string; value: number };
   leftButton: { field: string; value: number };
@@ -52,6 +54,11 @@ function buildSettingsTree(config: Config, topics: readonly Topic[]): SettingsTr
         input: "autocomplete",
         value: config.topic,
         items: topics.map((t) => t.name),
+      },
+      speedVariableName: {
+        label: "前进速度全局变量",
+        input: "string",
+        value: config.speedVariableName,
       },
     },
     children: {
@@ -115,6 +122,7 @@ function TeleopPanel(props: TeleopPanelProps): JSX.Element {
 
   const [currentAction, setCurrentAction] = useState<DirectionalPadAction | undefined>();
   const [topics, setTopics] = useState<readonly Topic[]>([]);
+  const { globalVariables } = useGlobalVariables();
 
   // resolve an initial config which may have some missing fields into a full config
   const [config, setConfig] = useState<Config>(() => {
@@ -123,6 +131,7 @@ function TeleopPanel(props: TeleopPanelProps): JSX.Element {
     const {
       topic,
       publishRate = 1,
+      speedVariableName,
       upButton: { field: upField = "linear-x", value: upValue = 1 } = {},
       downButton: { field: downField = "linear-x", value: downValue = -1 } = {},
       leftButton: { field: leftField = "angular-z", value: leftValue = 1 } = {},
@@ -132,6 +141,7 @@ function TeleopPanel(props: TeleopPanelProps): JSX.Element {
     return {
       topic,
       publishRate,
+      speedVariableName,
       upButton: { field: upField, value: upValue },
       downButton: { field: downField, value: downValue },
       leftButton: { field: leftField, value: leftValue },
@@ -236,12 +246,30 @@ function TeleopPanel(props: TeleopPanelProps): JSX.Element {
       }
     }
 
+    const variableValue = config.speedVariableName
+      ? globalVariables[config.speedVariableName]
+      : undefined;
+    const requestedSpeed =
+      typeof variableValue === "number" && Number.isFinite(variableValue)
+        ? Math.min(1.5, Math.max(0.3, Math.abs(variableValue)))
+        : undefined;
+
     switch (currentAction) {
       case DirectionalPadAction.UP:
-        setFieldValue(config.upButton.field, config.upButton.value);
+        setFieldValue(
+          config.upButton.field,
+          config.upButton.field === "linear-x" && requestedSpeed != undefined
+            ? requestedSpeed
+            : config.upButton.value,
+        );
         break;
       case DirectionalPadAction.DOWN:
-        setFieldValue(config.downButton.field, config.downButton.value);
+        setFieldValue(
+          config.downButton.field,
+          config.downButton.field === "linear-x" && requestedSpeed != undefined
+            ? -requestedSpeed
+            : config.downButton.value,
+        );
         break;
       case DirectionalPadAction.LEFT:
         setFieldValue(config.leftButton.field, config.leftButton.value);
@@ -266,7 +294,7 @@ function TeleopPanel(props: TeleopPanelProps): JSX.Element {
     return () => {
       clearInterval(intervalHandle);
     };
-  }, [context, config, currentTopic, currentAction]);
+  }, [context, config, currentTopic, currentAction, globalVariables]);
 
   useLayoutEffect(() => {
     renderDone();
@@ -285,9 +313,7 @@ function TeleopPanel(props: TeleopPanelProps): JSX.Element {
         style={{ padding: "min(5%, 8px)", textAlign: "center" }}
       >
         {!canPublish && <EmptyState>请连接支持发布功能的数据源</EmptyState>}
-        {canPublish && !hasTopic && (
-          <EmptyState>请在面板设置中选择发布话题</EmptyState>
-        )}
+        {canPublish && !hasTopic && <EmptyState>请在面板设置中选择发布话题</EmptyState>}
         {enabled && <DirectionalPad onAction={setCurrentAction} disabled={!enabled} />}
       </Stack>
     </ThemeProvider>
