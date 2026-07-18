@@ -23,6 +23,8 @@ function selectLayoutData(state: LayoutState) {
 }
 
 const log = Log.getLogger(__filename);
+const RRC_CHASSIS_LAYOUT_VERSION_KEY = "studio.rrcChassisLayoutVersion";
+const RRC_CHASSIS_LAYOUT_VERSION = "2";
 
 export function CurrentLayoutLocalStorageSyncAdapter(): JSX.Element {
   const { selectedSource } = usePlayerSelection();
@@ -51,7 +53,21 @@ export function CurrentLayoutLocalStorageSyncAdapter(): JSX.Element {
   useEffect(() => {
     log.debug(`Reading layout from local storage: ${LOCAL_STORAGE_STUDIO_LAYOUT_KEY}`);
 
-    const serializedLayoutData = localStorage.getItem(LOCAL_STORAGE_STUDIO_LAYOUT_KEY);
+    let serializedLayoutData = localStorage.getItem(LOCAL_STORAGE_STUDIO_LAYOUT_KEY);
+    const installedChassisLayoutVersion = localStorage.getItem(RRC_CHASSIS_LAYOUT_VERSION_KEY);
+
+    // Apply the robot-specific dashboard once when this desktop build is first
+    // installed. Store the layout immediately so React StrictMode cannot restore
+    // the previous layout during its second development mount. Subsequent user
+    // edits remain untouched until this version is intentionally bumped.
+    if (installedChassisLayoutVersion !== RRC_CHASSIS_LAYOUT_VERSION) {
+      const serializedDefaultLayout = JSON.stringify(defaultLayout);
+      assert(serializedDefaultLayout);
+      serializedLayoutData = serializedDefaultLayout;
+      localStorage.setItem(LOCAL_STORAGE_STUDIO_LAYOUT_KEY, serializedDefaultLayout);
+      localStorage.setItem(RRC_CHASSIS_LAYOUT_VERSION_KEY, RRC_CHASSIS_LAYOUT_VERSION);
+      log.info(`Installed RRC chassis dashboard version ${RRC_CHASSIS_LAYOUT_VERSION}`);
+    }
 
     if (serializedLayoutData) {
       log.debug("Restoring layout from local storage");

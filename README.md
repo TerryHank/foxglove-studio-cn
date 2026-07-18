@@ -1,5 +1,3 @@
-> 中文桌面版的安装、构建及汉化说明请参阅 [README.zh-CN.md](README.zh-CN.md)。ARM64 安装包请从本仓库 Releases 下载。
-
 [![Accelerate your robotics development](https://user-images.githubusercontent.com/14011012/195918769-5aaeedf3-5de2-48fb-951e-7399f2b9e190.png)](https://foxglove.dev)
 
 <br/>

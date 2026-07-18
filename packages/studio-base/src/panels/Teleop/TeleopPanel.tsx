@@ -36,6 +36,8 @@ const geometryMsgOptions = [
 type Config = {
   topic: undefined | string;
   publishRate: number;
+  stopOnRelease: boolean;
+  speedVariableName: undefined | string;
   upButton: { field: string; value: number };
   downButton: { field: string; value: number };
   leftButton: { field: string; value: number };
@@ -47,11 +49,21 @@ function buildSettingsTree(config: Config, topics: readonly Topic[]): SettingsTr
     label: "通用",
     fields: {
       publishRate: { label: "发布频率", input: "number", value: config.publishRate },
+      stopOnRelease: {
+        label: "松开方向键时发送停止指令",
+        input: "boolean",
+        value: config.stopOnRelease,
+      },
       topic: {
         label: "话题",
         input: "autocomplete",
         value: config.topic,
         items: topics.map((t) => t.name),
+      },
+      speedVariableName: {
+        label: "前进速度全局变量",
+        input: "string",
+        value: config.speedVariableName,
       },
     },
     children: {
@@ -115,6 +127,9 @@ function TeleopPanel(props: TeleopPanelProps): JSX.Element {
 
   const [currentAction, setCurrentAction] = useState<DirectionalPadAction | undefined>();
   const [topics, setTopics] = useState<readonly Topic[]>([]);
+  const [globalVariables, setGlobalVariables] = useState<ReadonlyMap<string, unknown>>(
+    () => new Map(),
+  );
 
   // resolve an initial config which may have some missing fields into a full config
   const [config, setConfig] = useState<Config>(() => {
@@ -123,6 +138,8 @@ function TeleopPanel(props: TeleopPanelProps): JSX.Element {
     const {
       topic,
       publishRate = 1,
+      stopOnRelease = true,
+      speedVariableName,
       upButton: { field: upField = "linear-x", value: upValue = 1 } = {},
       downButton: { field: downField = "linear-x", value: downValue = -1 } = {},
       leftButton: { field: leftField = "angular-z", value: leftValue = 1 } = {},
@@ -132,6 +149,8 @@ function TeleopPanel(props: TeleopPanelProps): JSX.Element {
     return {
       topic,
       publishRate,
+      stopOnRelease,
+      speedVariableName,
       upButton: { field: upField, value: upValue },
       downButton: { field: downField, value: downValue },
       leftButton: { field: leftField, value: leftValue },
@@ -157,9 +176,11 @@ function TeleopPanel(props: TeleopPanelProps): JSX.Element {
   useLayoutEffect(() => {
     context.watch("topics");
     context.watch("colorScheme");
+    context.watch("variables");
 
     context.onRender = (renderState, done) => {
       setTopics(renderState.topics ?? []);
+      setGlobalVariables(renderState.variables ?? new Map());
       setRenderDone(() => done);
       if (renderState.colorScheme) {
         setColorScheme(renderState.colorScheme);
@@ -194,6 +215,27 @@ function TeleopPanel(props: TeleopPanelProps): JSX.Element {
       context.unadvertise?.(currentTopic);
     };
   }, [context, currentTopic]);
+
+  const publishStop = useCallback(() => {
+    if (!currentTopic) {
+      return;
+    }
+
+    context.publish?.(currentTopic, {
+      linear: { x: 0, y: 0, z: 0 },
+      angular: { x: 0, y: 0, z: 0 },
+    });
+  }, [context, currentTopic]);
+
+  const handleAction = useCallback(
+    (action?: DirectionalPadAction) => {
+      if (action === DirectionalPadAction.STOP || (action == undefined && config.stopOnRelease)) {
+        publishStop();
+      }
+      setCurrentAction(action);
+    },
+    [config.stopOnRelease, publishStop],
+  );
 
   useLayoutEffect(() => {
     if (currentAction == undefined || !currentTopic) {
@@ -236,18 +278,38 @@ function TeleopPanel(props: TeleopPanelProps): JSX.Element {
       }
     }
 
+    const variableValue = config.speedVariableName
+      ? globalVariables.get(config.speedVariableName)
+      : undefined;
+    const requestedSpeed =
+      typeof variableValue === "number" && Number.isFinite(variableValue)
+        ? Math.min(1.5, Math.max(0.3, Math.abs(variableValue)))
+        : undefined;
+
     switch (currentAction) {
       case DirectionalPadAction.UP:
-        setFieldValue(config.upButton.field, config.upButton.value);
+        setFieldValue(
+          config.upButton.field,
+          config.upButton.field === "linear-x" && requestedSpeed != undefined
+            ? requestedSpeed
+            : config.upButton.value,
+        );
         break;
       case DirectionalPadAction.DOWN:
-        setFieldValue(config.downButton.field, config.downButton.value);
+        setFieldValue(
+          config.downButton.field,
+          config.downButton.field === "linear-x" && requestedSpeed != undefined
+            ? -requestedSpeed
+            : config.downButton.value,
+        );
         break;
       case DirectionalPadAction.LEFT:
         setFieldValue(config.leftButton.field, config.leftButton.value);
         break;
       case DirectionalPadAction.RIGHT:
         setFieldValue(config.rightButton.field, config.rightButton.value);
+        break;
+      case DirectionalPadAction.STOP:
         break;
       default:
     }
@@ -266,7 +328,7 @@ function TeleopPanel(props: TeleopPanelProps): JSX.Element {
     return () => {
       clearInterval(intervalHandle);
     };
-  }, [context, config, currentTopic, currentAction]);
+  }, [context, config, currentTopic, currentAction, globalVariables]);
 
   useLayoutEffect(() => {
     renderDone();
@@ -285,10 +347,8 @@ function TeleopPanel(props: TeleopPanelProps): JSX.Element {
         style={{ padding: "min(5%, 8px)", textAlign: "center" }}
       >
         {!canPublish && <EmptyState>请连接支持发布功能的数据源</EmptyState>}
-        {canPublish && !hasTopic && (
-          <EmptyState>请在面板设置中选择发布话题</EmptyState>
-        )}
-        {enabled && <DirectionalPad onAction={setCurrentAction} disabled={!enabled} />}
+        {canPublish && !hasTopic && <EmptyState>请在面板设置中选择发布话题</EmptyState>}
+        {enabled && <DirectionalPad onAction={handleAction} disabled={!enabled} />}
       </Stack>
     </ThemeProvider>
   );

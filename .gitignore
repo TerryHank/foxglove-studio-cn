@@ -19,6 +19,3 @@ coverage/
 
 # Extensions
 *.foxe
-
-# Desktop packages are published as GitHub Release assets, not committed to Git.
-*.deb
