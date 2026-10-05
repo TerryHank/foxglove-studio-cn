@@ -20,6 +20,11 @@ import ThemeProvider from "@foxglove/studio-base/theme/ThemeProvider";
 
 import DirectionalPad, { DirectionalPadAction } from "./DirectionalPad";
 
+const EMERGENCY_STOP_TOPIC = "/rrc_safety/emergency_stop";
+const EMERGENCY_STOP_STATE_TOPIC = "/rrc_safety/emergency_stop_state";
+const EMPTY_VARIABLES = new Map<string, unknown>();
+type EmergencyStopCommand = "stop" | "release";
+
 type TeleopPanelProps = {
   context: PanelExtensionContext;
 };
@@ -36,6 +41,7 @@ const geometryMsgOptions = [
 type Config = {
   topic: undefined | string;
   publishRate: number;
+  speedVariableName: undefined | string;
   upButton: { field: string; value: number };
   downButton: { field: string; value: number };
   leftButton: { field: string; value: number };
@@ -52,6 +58,11 @@ function buildSettingsTree(config: Config, topics: readonly Topic[]): SettingsTr
         input: "autocomplete",
         value: config.topic,
         items: topics.map((t) => t.name),
+      },
+      speedVariableName: {
+        label: "前进速度全局变量",
+        input: "string",
+        value: config.speedVariableName,
       },
     },
     children: {
@@ -114,6 +125,9 @@ function TeleopPanel(props: TeleopPanelProps): JSX.Element {
   const { saveState } = context;
 
   const [currentAction, setCurrentAction] = useState<DirectionalPadAction | undefined>();
+  const [emergencyStopped, setEmergencyStopped] = useState(false);
+  const [globalVariables, setGlobalVariables] =
+    useState<ReadonlyMap<string, unknown>>(EMPTY_VARIABLES);
   const [topics, setTopics] = useState<readonly Topic[]>([]);
 
   // resolve an initial config which may have some missing fields into a full config
@@ -123,6 +137,7 @@ function TeleopPanel(props: TeleopPanelProps): JSX.Element {
     const {
       topic,
       publishRate = 1,
+      speedVariableName,
       upButton: { field: upField = "linear-x", value: upValue = 1 } = {},
       downButton: { field: downField = "linear-x", value: downValue = -1 } = {},
       leftButton: { field: leftField = "angular-z", value: leftValue = 1 } = {},
@@ -132,6 +147,7 @@ function TeleopPanel(props: TeleopPanelProps): JSX.Element {
     return {
       topic,
       publishRate,
+      speedVariableName,
       upButton: { field: upField, value: upValue },
       downButton: { field: downField, value: downValue },
       leftButton: { field: leftField, value: leftValue },
@@ -157,13 +173,31 @@ function TeleopPanel(props: TeleopPanelProps): JSX.Element {
   useLayoutEffect(() => {
     context.watch("topics");
     context.watch("colorScheme");
+    context.watch("currentFrame");
+    context.watch("variables");
 
     context.onRender = (renderState, done) => {
       setTopics(renderState.topics ?? []);
+      setGlobalVariables(renderState.variables ?? EMPTY_VARIABLES);
       setRenderDone(() => done);
       if (renderState.colorScheme) {
         setColorScheme(renderState.colorScheme);
       }
+      for (const event of renderState.currentFrame ?? []) {
+        if (event.topic === EMERGENCY_STOP_STATE_TOPIC) {
+          const data = (event.message as { data?: unknown }).data;
+          if (typeof data === "boolean") {
+            setEmergencyStopped(data);
+          }
+        }
+      }
+    };
+  }, [context]);
+
+  useEffect(() => {
+    context.subscribe([{ topic: EMERGENCY_STOP_STATE_TOPIC, preload: false }]);
+    return () => {
+      context.unsubscribeAll();
     };
   }, [context]);
 
@@ -194,6 +228,16 @@ function TeleopPanel(props: TeleopPanelProps): JSX.Element {
       context.unadvertise?.(currentTopic);
     };
   }, [context, currentTopic]);
+
+  useLayoutEffect(() => {
+    context.advertise?.(EMERGENCY_STOP_TOPIC, "std_msgs/Bool", {
+      datatypes: new Map([["std_msgs/Bool", ros1["std_msgs/Bool"]]]),
+    });
+
+    return () => {
+      context.unadvertise?.(EMERGENCY_STOP_TOPIC);
+    };
+  }, [context]);
 
   useLayoutEffect(() => {
     if (currentAction == undefined || !currentTopic) {
@@ -236,12 +280,30 @@ function TeleopPanel(props: TeleopPanelProps): JSX.Element {
       }
     }
 
+    const variableValue = config.speedVariableName
+      ? globalVariables.get(config.speedVariableName)
+      : undefined;
+    const requestedSpeed =
+      typeof variableValue === "number" && Number.isFinite(variableValue)
+        ? Math.min(1.5, Math.max(0.3, Math.abs(variableValue)))
+        : undefined;
+
     switch (currentAction) {
       case DirectionalPadAction.UP:
-        setFieldValue(config.upButton.field, config.upButton.value);
+        setFieldValue(
+          config.upButton.field,
+          config.upButton.field === "linear-x" && requestedSpeed != undefined
+            ? requestedSpeed
+            : config.upButton.value,
+        );
         break;
       case DirectionalPadAction.DOWN:
-        setFieldValue(config.downButton.field, config.downButton.value);
+        setFieldValue(
+          config.downButton.field,
+          config.downButton.field === "linear-x" && requestedSpeed != undefined
+            ? -requestedSpeed
+            : config.downButton.value,
+        );
         break;
       case DirectionalPadAction.LEFT:
         setFieldValue(config.leftButton.field, config.leftButton.value);
@@ -266,15 +328,42 @@ function TeleopPanel(props: TeleopPanelProps): JSX.Element {
     return () => {
       clearInterval(intervalHandle);
     };
-  }, [context, config, currentTopic, currentAction]);
+  }, [context, config, currentTopic, currentAction, globalVariables]);
 
   useLayoutEffect(() => {
     renderDone();
   }, [renderDone]);
 
+  const publishEmergencyStop = useCallback(
+    (command: EmergencyStopCommand) => {
+      const stop = command === "stop";
+      setCurrentAction(undefined);
+      if (stop && currentTopic) {
+        context.publish?.(currentTopic, {
+          linear: { x: 0, y: 0, z: 0 },
+          angular: { x: 0, y: 0, z: 0 },
+        });
+      }
+      context.publish?.(EMERGENCY_STOP_TOPIC, { data: stop });
+      setEmergencyStopped(stop);
+    },
+    [context, currentTopic],
+  );
+
+  const onEmergencyStopClick = useCallback(() => {
+    if (!emergencyStopped) {
+      publishEmergencyStop("stop");
+      return;
+    }
+    if (window.confirm("确认小车周围安全，并且准备恢复接收速度指令？")) {
+      publishEmergencyStop("release");
+    }
+  }, [emergencyStopped, publishEmergencyStop]);
+
   const canPublish = context.publish != undefined && config.publishRate > 0;
+  const canEmergencyStop = context.publish != undefined;
   const hasTopic = Boolean(currentTopic);
-  const enabled = canPublish && hasTopic;
+  const movementEnabled = canPublish && hasTopic && !emergencyStopped;
 
   return (
     <ThemeProvider isDark={colorScheme === "dark"}>
@@ -285,10 +374,15 @@ function TeleopPanel(props: TeleopPanelProps): JSX.Element {
         style={{ padding: "min(5%, 8px)", textAlign: "center" }}
       >
         {!canPublish && <EmptyState>请连接支持发布功能的数据源</EmptyState>}
-        {canPublish && !hasTopic && (
-          <EmptyState>请在面板设置中选择发布话题</EmptyState>
+        {canPublish && !hasTopic && <EmptyState>请在面板设置中选择发布话题</EmptyState>}
+        {canEmergencyStop && (
+          <DirectionalPad
+            onAction={setCurrentAction}
+            disabled={!movementEnabled}
+            emergencyStopped={emergencyStopped}
+            onEmergencyStop={onEmergencyStopClick}
+          />
         )}
-        {enabled && <DirectionalPad onAction={setCurrentAction} disabled={!enabled} />}
       </Stack>
     </ThemeProvider>
   );
