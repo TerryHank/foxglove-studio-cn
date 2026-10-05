@@ -21,6 +21,24 @@ sudo apt install ./foxglove-studio-cn_1.86.0-cn.8_arm64.deb
 foxglove-studio-cn
 ```
 
+## Windows x64 安装
+
+从 [v1.86.0-cn.8 Release](https://github.com/TerryHank/foxglove-studio-cn/releases/tag/v1.86.0-cn.8) 下载 `foxglove-studio-cn_1.86.0-cn.8_x64.exe`。没有 Windows 代码签名证书时，安装器未签名，Windows 可能显示 SmartScreen 或未知发布者警告。
+
+## Windows x64 构建
+
+需要 Windows、Node.js 20 LTS 或更新版本、Corepack、npm 和可用的网络连接。在仓库根目录运行：
+
+```powershell
+pwsh -ExecutionPolicy Bypass -File .\build-desktop-cn.ps1
+```
+
+脚本会安装锁定的依赖、构建生产版 Web 前端，并生成 NSIS x64 安装器：
+
+```text
+desktop-cn\dist\foxglove-studio-cn_1.86.0-cn.8_x64.exe
+```
+
 ## 从源码构建
 
 构建机需要 ARM64 Linux、Node.js/Corepack、Yarn，以及 Electron Builder 所需的 Debian 打包依赖。
