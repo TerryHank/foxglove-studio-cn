@@ -65,6 +65,33 @@ const useStyles = makeStyles<void, "buttonIcon">()((theme, _params, classes) => 
       fill: theme.palette.background.default,
     },
   },
+  emergencyButton: {
+    cursor: "pointer",
+    fill: theme.palette.error.main,
+    stroke: theme.palette.common.white,
+    strokeWidth: 3,
+    transition: "fill 120ms ease, transform 120ms ease",
+    transformBox: "fill-box",
+    transformOrigin: "center",
+
+    "&:hover": {
+      fill: theme.palette.error.light,
+      transform: "scale(1.04)",
+    },
+    "&.active": {
+      fill: theme.palette.error.dark,
+      stroke: theme.palette.warning.light,
+      strokeWidth: 5,
+    },
+  },
+  emergencyText: {
+    pointerEvents: "none",
+    fill: theme.palette.common.white,
+    fontSize: 18,
+    fontWeight: 700,
+    textAnchor: "middle",
+    dominantBaseline: "central",
+  },
 }));
 
 export enum DirectionalPadAction {
@@ -76,11 +103,18 @@ export enum DirectionalPadAction {
 
 type DirectionalPadProps = {
   disabled?: boolean;
+  emergencyStopped?: boolean;
   onAction?: (action?: DirectionalPadAction) => void;
+  onEmergencyStop?: () => void;
 };
 
 function DirectionalPad(props: DirectionalPadProps): JSX.Element {
-  const { onAction, disabled = false } = props;
+  const {
+    onAction,
+    onEmergencyStop,
+    disabled = false,
+    emergencyStopped = false,
+  } = props;
 
   const [currentAction, setCurrentAction] = useState<DirectionalPadAction | undefined>();
 
@@ -188,6 +222,24 @@ function DirectionalPad(props: DirectionalPadProps): JSX.Element {
               d="M225.43,127.854l-20,20l0,-40l20,20Z"
             />
           </g>
+        </g>
+
+        {/* Emergency stop button */}
+        <g
+          onClick={onEmergencyStop}
+          role="button"
+          aria-label={emergencyStopped ? "解除急停" : "急停"}
+          style={{ cursor: "pointer" }}
+        >
+          <circle
+            className={cx(classes.emergencyButton, { active: emergencyStopped })}
+            cx="128"
+            cy="128"
+            r="38"
+          />
+          <text className={classes.emergencyText} x="128" y="128">
+            {emergencyStopped ? "解除" : "急停"}
+          </text>
         </g>
       </svg>
     </Stack>

@@ -126,6 +126,16 @@ function displayableValue(value: unknown): string {
   }
 }
 
+function parameterRemark(name: string): string {
+  if (name.endsWith(".inflation_layer.inflation_radius")) {
+    return "障碍物向外膨胀的距离，单位 m；越大越保守";
+  }
+  if (name.endsWith(".inflation_layer.cost_scaling_factor")) {
+    return "膨胀代价衰减系数；越大，代价随距离衰减越快";
+  }
+  return "—";
+}
+
 function SubmittableJsonInput(props: {
   value: unknown;
   onSubmit: (newVal: unknown) => void;
@@ -244,6 +254,7 @@ function Parameters(): ReactElement {
           <TableHead>
             <TableRow>
               <TableCell>Parameter</TableCell>
+              <TableCell>备注</TableCell>
               <TableCell>Value</TableCell>
               <TableCell>&nbsp;</TableCell>
             </TableRow>
@@ -262,6 +273,12 @@ function Parameters(): ReactElement {
                   <TableCell variant="head">
                     <Typography noWrap title={name} variant="inherit">
                       {name}
+                    </Typography>
+                  </TableCell>
+
+                  <TableCell>
+                    <Typography noWrap title={parameterRemark(name)} variant="inherit">
+                      {parameterRemark(name)}
                     </Typography>
                   </TableCell>
 
