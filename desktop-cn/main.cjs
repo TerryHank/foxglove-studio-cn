@@ -3,14 +3,40 @@ const path = require("node:path");
 
 const APP_NAME = "Foxglove Studio 中文版";
 const BRIDGE_URL = "ws://localhost:8765";
-const DEMO_CONTROL = process.argv.includes("--demo-control");
+let DEMO_CONTROL = process.argv.includes("--demo-control");
 let mainWindow;
+let demoControlStarted = false;
 
 app.setName(APP_NAME);
 // Keep every runtime path ASCII-only. Some Electron/Chromium helpers and
 // third-party native libraries still behave inconsistently with non-ASCII paths.
 app.setPath("userData", path.join(app.getPath("appData"), "foxglove-studio-cn"));
 app.commandLine.appendSwitch("lang", "zh-CN");
+
+const primaryInstance = app.requestSingleInstanceLock();
+
+function enableDemoControl() {
+  if (demoControlStarted) {
+    return;
+  }
+  const needsReload = !DEMO_CONTROL;
+  DEMO_CONTROL = true;
+  demoControlStarted = true;
+  require("./demo-control.cjs").startDemoControl({ app, getWindow: () => mainWindow });
+  if (needsReload && mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.setBackgroundThrottling(false);
+    const reloadWithControl = () => {
+      const url = new URL(mainWindow.webContents.getURL());
+      url.searchParams.set("demoControl", "true");
+      void mainWindow.loadURL(url.href);
+    };
+    if (mainWindow.webContents.getURL()) {
+      reloadWithControl();
+    } else {
+      mainWindow.webContents.once("did-finish-load", reloadWithControl);
+    }
+  }
+}
 
 function installChineseMenu() {
   const template = [
@@ -98,17 +124,36 @@ function createWindow() {
   });
 }
 
-app.whenReady().then(() => {
-  installChineseMenu();
-  createWindow();
-  if (DEMO_CONTROL) {
-    require("./demo-control.cjs").startDemoControl({ app, getWindow: () => mainWindow });
-  }
-  app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
-    }
+if (!primaryInstance) {
+  app.quit();
+} else {
+  app.on("second-instance", (_event, argv) => {
+    void app.whenReady().then(() => {
+      if (argv.includes("--demo-control")) {
+        enableDemoControl();
+      }
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        if (mainWindow.isMinimized()) {
+          mainWindow.restore();
+        }
+        mainWindow.show();
+        mainWindow.focus();
+      }
+    });
   });
-});
 
-app.on("window-all-closed", () => app.quit());
+  app.whenReady().then(() => {
+    installChineseMenu();
+    createWindow();
+    if (DEMO_CONTROL) {
+      enableDemoControl();
+    }
+    app.on("activate", () => {
+      if (BrowserWindow.getAllWindows().length === 0) {
+        createWindow();
+      }
+    });
+  });
+
+  app.on("window-all-closed", () => app.quit());
+}

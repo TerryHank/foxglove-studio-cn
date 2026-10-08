@@ -5,7 +5,7 @@ description: "Operate the local Foxglove Studio CN desktop through MCP: inspect 
 
 # Foxglove 中文版控制
 
-使用 TerryHank/foxglove-studio-cn 的本机可视化接口。当前实现需要带 --demo-control 的 cn.9 客户端；这是自定义 MCP，区别于官方付费桌面 MCP。
+使用 TerryHank/foxglove-studio-cn 的本机可视化接口。当前实现需要带 --demo-control 的 cn.9 或更新客户端；这是自定义 MCP，区别于官方付费桌面 MCP。
 
 ## 入口
 

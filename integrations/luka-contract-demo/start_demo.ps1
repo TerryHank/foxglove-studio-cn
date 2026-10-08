@@ -15,8 +15,8 @@ $controlPath = Join-Path $env:APPDATA "foxglove-studio-cn/demo-control.json"
 New-Item -ItemType Directory -Force -Path $state | Out-Null
 function Get-Control {
     if (Test-Path -LiteralPath $controlPath) {
-        $cfg = Get-Content -LiteralPath $controlPath -Raw | ConvertFrom-Json
         try {
+            $cfg = Get-Content -LiteralPath $controlPath -Raw | ConvertFrom-Json
             $null = Invoke-RestMethod -Uri "$($cfg.url)/status" -Headers @{Authorization="Bearer $($cfg.token)"} -TimeoutSec 2
             return $cfg
         } catch { }
@@ -27,13 +27,20 @@ $control = Get-Control
 if (-not $control) {
     . (Join-Path $PSScriptRoot 'resolve_desktop.ps1')
     $exe = Find-CNDesktopExecutable
-    Start-Process -FilePath $exe -ArgumentList '--demo-control' -WindowStyle Hidden
+    $desktopLogs = @{
+        FilePath=$exe; ArgumentList='--demo-control'; WindowStyle='Hidden'; PassThru=$true
+        RedirectStandardError=(Join-Path $state 'cn-desktop-error.log')
+        RedirectStandardOutput=(Join-Path $state 'cn-desktop-output.log')
+    }
+    $desktop = Start-Process @desktopLogs
     for ($i=0; $i -lt 60; $i++) {
         Start-Sleep -Milliseconds 500
         $control = Get-Control
         if ($control) { break }
     }
-    if (-not $control) { throw "CN visualization API did not become ready; check the desktop window" }
+    if (-not $control) {
+        throw "CN visualization API did not become ready; inspect $state\cn-desktop-error.log"
+    }
 }
 # mode 0600 is insufficient on Windows; restrict the local token file's ACL.
 

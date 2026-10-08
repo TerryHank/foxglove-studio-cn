@@ -36,7 +36,7 @@ pwsh -ExecutionPolicy Bypass -File .\build-desktop-cn.ps1
 脚本会安装锁定的依赖、构建生产版 Web 前端，并生成 NSIS x64 安装器：
 
 ```text
-desktop-cn\dist\foxglove-studio-cn_1.86.0-cn.9_x64.exe
+desktop-cn\dist\foxglove-studio-cn_1.86.0-cn.10_x64.exe
 ```
 
 ## 从源码构建
@@ -69,7 +69,7 @@ node scripts/audit-zh-translations.mjs
 本仓库以完整源码快照发布，并保留原项目的 MPL-2.0 许可证、NOTICE 和上游来源说明。Foxglove、ROS、MCAP、WebSocket 等品牌名和协议名保持原文。
 
 
-## Luka 合同功能演示（cn.9 开发版）
+## Luka 合同功能演示（cn.10 开发版）
 
 Windows本地开发版增加可选的本机演示API；启动时传入--demo-control启用。
 18份只读布局覆盖IMU、RGB-D、雷达、地图、路径和业务状态。

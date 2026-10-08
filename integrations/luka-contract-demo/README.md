@@ -1,6 +1,6 @@
 # Luka 合同功能演示：Foxglove Studio 中文版
 
-客户端：TerryHank/foxglove-studio-cn，Windows x64开发版本1.86.0-cn.9。
+客户端：TerryHank/foxglove-studio-cn，Windows x64开发版本1.86.0-cn.10。
 不需要官方Foxglove账号、订阅或MCP令牌。这里提供本机HTTP API，不冒充官方MCP。
 
 ## 一键启动
@@ -19,6 +19,8 @@
 - Ctrl+C终止远端launch；也可使用对应远端stop.sh。复用的既有服务保留。
 - 环境、文档、交付检查和未实现/服务承诺项没有伪造传感器场景。
 - 本机目录移动后，按实际绝对路径调整启动命令。
+- cn.10采用单实例：重复启动复用原窗口，普通窗口也可通过--demo-control启用API，避免多个主进程争用同一缓存和7334端口。
+- 客户端原生日志写入%LOCALAPPDATA%/luka-contract-demo/cn-desktop-error.log；API启动失败仍会明确报错，不把单条缓存日志当作运行结果。
 - 如果SSH提示banner exchange超时，远端连接尚未建立，ROS launch不会执行；连接恢复后重试同一命令。
 
 ## 连接
