@@ -10,6 +10,7 @@
     powershell.exe -NoProfile -ExecutionPolicy Bypass -File D:\Workspace\foxglove-studio-cn\integrations\luka-contract-demo\start_demo.ps1 -Item 03 -Run
 
 使用Windows自带的PowerShell 5.1，无需另外安装pwsh。启动器设置UTF-8以正确显示远端中文输出。
+程序查找会检查用户/系统安装记录、标准用户安装路径及本仓库的Windows构建目录；登记缺失时不再直接判定未安装。
 
 - Item选择01至27；01和02进入同一底盘演示。
 - 不带-Run：只打开本机客户端、连接桥接并选布局，不启动远端设备。
@@ -18,6 +19,7 @@
 - Ctrl+C终止远端launch；也可使用对应远端stop.sh。复用的既有服务保留。
 - 环境、文档、交付检查和未实现/服务承诺项没有伪造传感器场景。
 - 本机目录移动后，按实际绝对路径调整启动命令。
+- 如果SSH提示banner exchange超时，远端连接尚未建立，ROS launch不会执行；连接恢复后重试同一命令。
 
 ## 连接
 

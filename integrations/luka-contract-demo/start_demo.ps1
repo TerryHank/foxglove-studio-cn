@@ -25,10 +25,8 @@ function Get-Control {
 }
 $control = Get-Control
 if (-not $control) {
-    $entry = Get-ItemProperty 'HKCU:/Software/Microsoft/Windows/CurrentVersion/Uninstall/*' |
-        Where-Object DisplayName -Like 'Foxglove-Studio-CN *' | Select-Object -First 1
-    if (-not $entry) { throw "Install the cn.9 Windows build first" }
-    $exe = ($entry.DisplayIcon -split ',')[0].Trim('"')
+    . (Join-Path $PSScriptRoot 'resolve_desktop.ps1')
+    $exe = Find-CNDesktopExecutable
     Start-Process -FilePath $exe -ArgumentList '--demo-control' -WindowStyle Hidden
     for ($i=0; $i -lt 60; $i++) {
         Start-Sleep -Milliseconds 500
