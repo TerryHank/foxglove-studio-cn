@@ -1,9 +1,13 @@
+#Requires -Version 5.1
 param(
     [ValidatePattern("^(0?[1-9]|1[0-9]|2[0-7])$")]
     [string]$Item = "03",
     [switch]$Run
 )
 $ErrorActionPreference = "Stop"
+$OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+[Console]::InputEncoding = $OutputEncoding
+[Console]::OutputEncoding = $OutputEncoding
 $number = $Item.PadLeft(2, "0")
 $hostName = "sunrise@192.168.3.150"
 $state = Join-Path $env:LOCALAPPDATA "luka-contract-demo"

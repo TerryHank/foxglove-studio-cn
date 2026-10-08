@@ -7,7 +7,9 @@
 
 在本机PowerShell中运行：
 
-    pwsh -NoProfile -ExecutionPolicy Bypass -File D:\Workspace\foxglove-studio-cn\integrations\luka-contract-demo\start_demo.ps1 -Item 03 -Run
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File D:\Workspace\foxglove-studio-cn\integrations\luka-contract-demo\start_demo.ps1 -Item 03 -Run
+
+使用Windows自带的PowerShell 5.1，无需另外安装pwsh。启动器设置UTF-8以正确显示远端中文输出。
 
 - Item选择01至27；01和02进入同一底盘演示。
 - 不带-Run：只打开本机客户端、连接桥接并选布局，不启动远端设备。
