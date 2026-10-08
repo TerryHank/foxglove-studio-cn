@@ -1,6 +1,6 @@
 # Luka 合同功能演示：Foxglove Studio 中文版
 
-客户端：TerryHank/foxglove-studio-cn，Windows x64开发版本1.86.0-cn.10。
+客户端：TerryHank/foxglove-studio-cn，Windows x64开发版本1.86.0-cn.11。
 不需要官方Foxglove账号、订阅或MCP令牌。这里提供本机HTTP API，不冒充官方MCP。
 
 ## 一键启动
@@ -26,7 +26,7 @@
 ## 连接
 
 - 本机API：127.0.0.1:7334，只有--demo-control模式启用。
-- WebSocket：SSH本地转发127.0.0.1:18765 → 机器人127.0.0.1:8765。
+- 机器人数据WebSocket：ws://192.168.3.150:8765，本机直接连接机器人，不使用本机localhost:8765。
 - API：SSH反向转发机器人127.0.0.1:17334 → 本机127.0.0.1:7334。
 - 机器人：sunrise@192.168.3.150；密钥认证，不保存SSH密码。
 - 本机令牌：%APPDATA%\foxglove-studio-cn\demo-control.json，Windows启动器限制其ACL。

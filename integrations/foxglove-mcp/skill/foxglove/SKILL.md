@@ -48,7 +48,7 @@ Windows默认使用自带PowerShell 5.1；不假设pwsh已在PATH。启动器已
 
 现有项目约定：
 - 机器人 sunrise@192.168.3.150，工作区 /home/sunrise/luka_ws/src/，数据 /home/sunrise/luka_data/。
-- 本机18765转发机器人Foxglove bridge的8765。
+- 本机直接用ws://192.168.3.150:8765连接机器人Foxglove bridge；localhost:8765指本机，不是机器人地址。
 - 机器人17334反向转发本机可视化API的7334。
 - 机器人重启后重跑启动器刷新隧道。
 

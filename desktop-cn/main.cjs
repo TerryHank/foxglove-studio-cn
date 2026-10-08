@@ -2,7 +2,9 @@ const { app, BrowserWindow, Menu, shell } = require("electron");
 const path = require("node:path");
 
 const APP_NAME = "Foxglove Studio 中文版";
-const BRIDGE_URL = "ws://localhost:8765";
+const BRIDGE_URL = process.platform === "win32"
+  ? "ws://192.168.3.150:8765"
+  : "ws://localhost:8765";
 let DEMO_CONTROL = process.argv.includes("--demo-control");
 let mainWindow;
 let demoControlStarted = false;

@@ -60,7 +60,7 @@ if(-not $tunnel) {
         FilePath=(Get-Command ssh).Source; WindowStyle='Hidden'; PassThru=$true
         ArgumentList=@('-NT','-o','BatchMode=yes','-o','ExitOnForwardFailure=yes',
             '-o','ServerAliveInterval=15','-o','ServerAliveCountMax=3',
-            '-L','127.0.0.1:18765:127.0.0.1:8765','-R','127.0.0.1:17334:127.0.0.1:7334',$hostName)
+            '-R','127.0.0.1:17334:127.0.0.1:7334',$hostName)
         RedirectStandardError=(Join-Path $state 'cn-tunnel-error.log')
         RedirectStandardOutput=(Join-Path $state 'cn-tunnel-output.log')
     }
@@ -70,11 +70,11 @@ if(-not $tunnel) {
     @{pid=$tunnel.Id;startTicks=$tunnel.StartTime.ToUniversalTime().Ticks.ToString()} |
         ConvertTo-Json | Set-Content -LiteralPath $tunnelPath -Encoding utf8
 }
-$remoteConfig=@{url='http://127.0.0.1:17334';bridge_url='ws://127.0.0.1:18765';token=$control.token}|ConvertTo-Json -Compress
+$remoteConfig=@{url='http://127.0.0.1:17334';bridge_url='ws://192.168.3.150:8765';token=$control.token}|ConvertTo-Json -Compress
 $remoteConfig | & ssh -o ConnectTimeout=8 -o BatchMode=yes $hostName 'umask 077; mkdir -p /home/sunrise/luka_data/recordings/contract_demo; cat > /home/sunrise/luka_data/recordings/contract_demo/foxglove_client.json'
 if($LASTEXITCODE -ne 0){throw "Remote visualization configuration failed"}
 $headers=@{Authorization="Bearer $($control.token)"}
-$body=@{url='ws://127.0.0.1:18765'}|ConvertTo-Json
+$body=@{url='ws://192.168.3.150:8765'}|ConvertTo-Json
 $null=Invoke-RestMethod -Uri "$($control.url)/connect" -Method Post -ContentType 'application/json' -Headers $headers -Body $body
 & ssh -o ConnectTimeout=8 -o BatchMode=yes $hostName "python3 /home/sunrise/luka_ws/src/examples/contract_demo/_shared/foxglove_client.py --item $number"
 if($LASTEXITCODE -ne 0){throw "Layout selection failed"}

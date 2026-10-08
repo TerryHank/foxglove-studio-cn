@@ -9,7 +9,7 @@
 - 新增 Electron ARM64 桌面壳与 Debian 打包流程，结构参考 [Lichtblick](https://github.com/Lichtblick-Suite/lichtblick)。
 - 安装目录固定为纯 ASCII 路径 `/opt/Foxglove-Studio-CN`。
 - 用户配置目录固定为 `~/.config/foxglove-studio-cn`，避免中文运行路径兼容问题。
-- 默认连接 `ws://localhost:8765`。
+- Windows默认连接 `ws://192.168.3.150:8765`；Linux默认连接同机的 `ws://localhost:8765`。
 - 兼容 ROS 2 Humble `foxglove_bridge` 3.x 使用的 `foxglove.sdk.v1` 子协议。
 
 ## 安装
@@ -36,7 +36,7 @@ pwsh -ExecutionPolicy Bypass -File .\build-desktop-cn.ps1
 脚本会安装锁定的依赖、构建生产版 Web 前端，并生成 NSIS x64 安装器：
 
 ```text
-desktop-cn\dist\foxglove-studio-cn_1.86.0-cn.10_x64.exe
+desktop-cn\dist\foxglove-studio-cn_1.86.0-cn.11_x64.exe
 ```
 
 ## 从源码构建
@@ -69,7 +69,7 @@ node scripts/audit-zh-translations.mjs
 本仓库以完整源码快照发布，并保留原项目的 MPL-2.0 许可证、NOTICE 和上游来源说明。Foxglove、ROS、MCAP、WebSocket 等品牌名和协议名保持原文。
 
 
-## Luka 合同功能演示（cn.10 开发版）
+## Luka 合同功能演示（cn.11 开发版）
 
 Windows本地开发版增加可选的本机演示API；启动时传入--demo-control启用。
 18份只读布局覆盖IMU、RGB-D、雷达、地图、路径和业务状态。
