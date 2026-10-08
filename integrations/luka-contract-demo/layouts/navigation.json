@@ -25,6 +25,15 @@
       "transforms": {},
       "layers": {},
       "version": 1,
+      "publish": {
+        "type": "pose",
+        "poseTopic": "/contract_demo/goal_pose",
+        "pointTopic": "/clicked_point",
+        "poseEstimateTopic": "/initialpose",
+        "poseEstimateXDeviation": 0.25,
+        "poseEstimateYDeviation": 0.25,
+        "poseEstimateThetaDeviation": 0.26
+      },
       "topics": {
         "/map": {
           "visible": true,
@@ -75,8 +84,8 @@
       "fontSize": 14
     },
     "RawMessages!luka2": {
-      "foxglovePanelTitle": "导航状态",
-      "topicPath": "/hotel/navigation_status",
+      "foxglovePanelTitle": "原生导航请求与结果",
+      "topicPath": "/contract_demo/navigation_status",
       "expansion": "all",
       "diffEnabled": false,
       "diffMethod": "previous message",
@@ -93,23 +102,32 @@
       "diffTopicPath": "",
       "showFullMessageForDiff": false,
       "fontSize": 14
+    },
+    "LukaConsole!navigation": {
+      "caseNumber": "12",
+      "section": "navigation"
     }
   },
   "layout": {
     "direction": "row",
     "first": {
-      "direction": "column",
-      "first": "3D!luka0",
-      "second": "RawMessages!luka1",
+      "direction": "row",
+      "first": {
+        "direction": "column",
+        "first": "3D!luka0",
+        "second": "RawMessages!luka1",
+        "splitPercentage": 55
+      },
+      "second": {
+        "direction": "column",
+        "first": "RawMessages!luka2",
+        "second": "RawMessages!luka3",
+        "splitPercentage": 55
+      },
       "splitPercentage": 55
     },
-    "second": {
-      "direction": "column",
-      "first": "RawMessages!luka2",
-      "second": "RawMessages!luka3",
-      "splitPercentage": 55
-    },
-    "splitPercentage": 55
+    "second": "LukaConsole!navigation",
+    "splitPercentage": 52
   },
   "globalVariables": {},
   "userNodes": {},

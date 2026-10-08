@@ -35,18 +35,27 @@
       "diffTopicPath": "",
       "showFullMessageForDiff": false,
       "fontSize": 14
+    },
+    "LukaConsole!camera": {
+      "caseNumber": "05",
+      "section": "navigation"
     }
   },
   "layout": {
     "direction": "row",
     "first": {
-      "direction": "column",
-      "first": "Image!luka0",
-      "second": "Image!luka1",
+      "direction": "row",
+      "first": {
+        "direction": "column",
+        "first": "Image!luka0",
+        "second": "Image!luka1",
+        "splitPercentage": 55
+      },
+      "second": "RawMessages!luka2",
       "splitPercentage": 55
     },
-    "second": "RawMessages!luka2",
-    "splitPercentage": 55
+    "second": "LukaConsole!camera",
+    "splitPercentage": 52
   },
   "globalVariables": {},
   "userNodes": {},

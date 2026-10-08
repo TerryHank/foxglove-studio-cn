@@ -12,11 +12,11 @@ ALIASES={"drive_odom":"drive_odom","imu_launch":"imu_axes"}
 PROFILES={p.stem for p in (HERE/"foxglove_layouts").glob("*.json")}
 
 
-def show_layout(group):
+def show_layout(group, item_override=None):
     if os.environ.get("ROS_DOMAIN_ID","87") != "87":
         return False
     profile=ALIASES.get(group,group)
-    if profile not in PROFILES:
+    if profile not in PROFILES and item_override is None:
         return False
     config_path=DATA/"foxglove_client.json"
     if not config_path.exists():
@@ -29,9 +29,13 @@ def show_layout(group):
         with urlopen(reconnect,timeout=4) as response:
             response.read()
     items=json.loads((BASE/"manifest.json").read_text())["items"]
-    matching=[i for i in items if ALIASES.get(i["profile"],i["profile"])==profile]
+    matching=[item_override] if item_override else [i for i in items if ALIASES.get(i["profile"],i["profile"])==profile]
     name="/".join(i["number"] for i in matching)+" "+matching[0]["title"]+" · "+matching[0]["folder_status_suffix"]
-    data=json.loads((HERE/"foxglove_layouts"/(profile+".json")).read_text())
+    data=(json.loads((HERE/"foxglove_layouts"/(profile+".json")).read_text()) if profile in PROFILES else
+          {"configById":{"LukaConsole!operations":{"caseNumber":matching[0]["number"],"section":"system","initialView":"guide"}},
+           "layout":"LukaConsole!operations","globalVariables":{},"userNodes":{},"playbackConfig":{"speed":1},"version":1})
+    for key,value in data["configById"].items():
+        if key.startswith("LukaConsole!"):value["caseNumber"]=matching[0]["number"]
     request=Request(config["url"]+"/layout",data=json.dumps({"name":name,"data":data},ensure_ascii=False).encode(),
                     headers={"Authorization":"Bearer "+config["token"],"Content-Type":"application/json"},method="POST")
     with urlopen(request,timeout=4) as response:
@@ -47,9 +51,6 @@ def main():
     item=next(i for i in json.loads((BASE/"manifest.json").read_text())["items"]
               if i["number"]==args.item.zfill(2))
     profile=ALIASES.get(item["profile"],item["profile"])
-    if profile not in PROFILES:
-        print("Inspection/missing/service item: no live visualization demo.")
-        return
-    if not show_layout(profile):raise SystemExit(1)
+    if not show_layout(profile, item):raise SystemExit(1)
 
 if __name__=="__main__":main()

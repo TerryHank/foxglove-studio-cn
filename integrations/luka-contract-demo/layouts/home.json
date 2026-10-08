@@ -25,6 +25,15 @@
       "transforms": {},
       "layers": {},
       "version": 1,
+      "publish": {
+        "type": "pose",
+        "poseTopic": "/contract_demo/goal_pose",
+        "pointTopic": "/clicked_point",
+        "poseEstimateTopic": "/initialpose",
+        "poseEstimateXDeviation": 0.25,
+        "poseEstimateYDeviation": 0.25,
+        "poseEstimateThetaDeviation": 0.26
+      },
       "topics": {
         "/map": {
           "visible": true,
@@ -73,13 +82,37 @@
       "diffTopicPath": "",
       "showFullMessageForDiff": false,
       "fontSize": 14
+    },
+    "RawMessages!luka2": {
+      "foxglovePanelTitle": "暂存目标与Nav2结果",
+      "topicPath": "/contract_demo/navigation_status",
+      "expansion": "all",
+      "diffEnabled": false,
+      "diffMethod": "previous message",
+      "diffTopicPath": "",
+      "showFullMessageForDiff": false,
+      "fontSize": 14
+    },
+    "LukaConsole!home": {
+      "caseNumber": "17",
+      "section": "patrol"
     }
   },
   "layout": {
     "direction": "row",
-    "first": "3D!luka0",
-    "second": "RawMessages!luka1",
-    "splitPercentage": 55
+    "first": {
+      "direction": "row",
+      "first": {
+        "direction": "column",
+        "first": "3D!luka0",
+        "second": "RawMessages!luka1",
+        "splitPercentage": 55
+      },
+      "second": "RawMessages!luka2",
+      "splitPercentage": 55
+    },
+    "second": "LukaConsole!home",
+    "splitPercentage": 52
   },
   "globalVariables": {},
   "userNodes": {},

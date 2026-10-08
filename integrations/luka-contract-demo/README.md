@@ -1,66 +1,46 @@
-# Luka 合同功能演示：Foxglove Studio 中文版
+# Luka 原生 Foxglove 操作与合同验收
 
-客户端：TerryHank/foxglove-studio-cn，Windows x64开发版本1.86.0-cn.11。
-不需要官方Foxglove账号、订阅或MCP令牌。这里提供本机HTTP API，不冒充官方MCP。
+Windows客户端：1.86.0-cn.13；机器人数据直连 `ws://192.168.3.150:8765`。
+所有交互使用Foxglove的原生面板、React/MUI控件和ROS bridge，不加载旧网页或iframe，不启动dashboard服务。
 
 ## 一键启动
 
-在本机PowerShell中运行：
+```powershell
+$demoScript="D:\Workspace\foxglove-studio-cn\integrations\luka-contract-demo\start_demo.ps1"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File $demoScript -Item 01 -Run
+```
 
-    powershell.exe -NoProfile -ExecutionPolicy Bypass -File D:\Workspace\foxglove-studio-cn\integrations\luka-contract-demo\start_demo.ps1 -Item 03 -Run
+`-Run`包含SSH启动对应远端ROS launch；省略时只连接和选择布局。其他案例替换编号。
+客户端右侧“原生控制”用于操作，“本案例步骤”显示该项观察、证据与缺口。
+01/02共用底盘场景。25项教程见[验收手册](acceptance/ACCEPTANCE_GUIDE.md)，26/27为交付与服务附录。
 
-使用Windows自带的PowerShell 5.1，无需另外安装pwsh。启动器设置UTF-8以正确显示远端中文输出。
-程序查找会检查用户/系统安装记录、标准用户安装路径及本仓库的Windows构建目录；登记缺失时不再直接判定未安装。
+## 原生交互
 
-- Item选择01至27；01和02进入同一底盘演示。
-- 不带-Run：只打开本机客户端、连接桥接并选布局，不启动远端设备。
-- 带-Run：随后通过现有ROS launch启动远端对应功能。01/02需要交互终端，键盘输入走已有保护手动出口。
-- 建立联动后，远端各demo.sh或menu.sh也会自动选择对应布局。
-- Ctrl+C终止远端launch；也可使用对应远端stop.sh。复用的既有服务保留。
-- 环境、文档、交付检查和未实现/服务承诺项没有伪造传感器场景。
-- 本机目录移动后，按实际绝对路径调整启动命令。
-- cn.10采用单实例：重复启动复用原窗口，普通窗口也可通过--demo-control启用API，避免多个主进程争用同一缓存和7334端口。
-- 客户端原生日志写入%LOCALAPPDATA%/luka-contract-demo/cn-desktop-error.log；API启动失败仍会明确报错，不把单条缓存日志当作运行结果。
-- 如果SSH提示banner exchange超时，远端连接尚未建立，ROS launch不会执行；连接恢复后重试同一命令。
+- 方向：收到新鲜底盘状态、编码器及双雷达后勾选“启用本次方向操作”；按住六个方向按钮。松开、失焦、取消指针、切换布局或数据过期停止。单次最长2秒，线速度0.10m/s、角速度0.20rad/s。机器人仍执行已有0.3秒指令超时、传感器新鲜度和碰撞门控。
+- 定位：3D发布位姿估计工具向`/initialpose`发送初始位姿；操作者核验扫描与地图重合。原网页自动重定位流程未接入本面板。
+- 单点导航：3D发布位姿到`/contract_demo/goal_pose`，只暂存30秒；点击“执行暂存导航目标”，经`/nx/navigation_enable`安全门后调用现有Nav2 `NavigateToPose`。读取`/contract_demo/navigation_status`的反馈和结果；取消后确认实测停止。
+- 巡检14：3D设置发布位姿话题为`/patrol/add_pose`添加多个点；原生按钮保存/读回路线、巡航一圈、暂停/恢复、停止。停留时间按现有路线YAML配置。路线存储在`luka_data/recordings/contract_demo/business/demo_route.yaml`，保存会更新本演示文件。
+- Home17：记录当前位置、软件返航、取消；只演示软件Home，不能代替精准对接/自动充电。
+- 地图09/10：09建图时点击保存，服务先返回已接受，随后在`/contract_demo/map_status`核对完整导出结果及新路径；现有导出器使用唯一文件名，不覆盖生产地图。停止SLAM及现有地图节点，再用10 `-MapYaml /home/sunrise/luka_data/maps/contract_demo/保存目录/map.yaml -Run`重载。
+- 状态机24：原生暂停、恢复、取消任务服务；结合任务状态与实测里程计检查效果。独立导航示例不自动变成mission任务，mission状态联动需由现有任务入口创建相应任务。
+- 语音20：原生文字播报；实际唤醒/识别使用麦克风，观察原生RawMessages。文字播报不能证明实时DOA或声源趋近。
+- IMU03：默认原始六轴；先有轮里程计，再03 `-WithEkf -Run`验证融合。
 
-## 连接
+旧`/nx/web_teleop_cmd_vel`和`/nx/web_teleop_status`名称保留为受保护ROS接口兼容名；不依赖网页服务。MCP只有布局、连接、截图工具，不替操作者点击运动按钮。
 
-- 本机API：127.0.0.1:7334，只有--demo-control模式启用。
-- 机器人数据WebSocket：ws://192.168.3.150:8765，本机直接连接机器人，不使用本机localhost:8765。
-- API：SSH反向转发机器人127.0.0.1:17334 → 本机127.0.0.1:7334。
-- 机器人：sunrise@192.168.3.150；密钥认证，不保存SSH密码。
-- 本机令牌：%APPDATA%\foxglove-studio-cn\demo-control.json，Windows启动器限制其ACL。
-- 远端令牌：~/luka_data/recordings/contract_demo/foxglove_client.json，权限600。
-- Token/隧道状态/截图/现场日志不进入Git。app退出后API关闭；机器人重启后重跑启动器刷新隧道。
+## 停止与验收
 
-## 可调用接口
+松开方向键只停止当前手动输入；活动导航用取消按钮。结束用Ctrl+C或对应stop.sh；不把关闭Foxglove当作所有任务停止。
+01与09/04组合时先01后算法，结束先算法后01；SLAM与AMCL互斥。
+[现场记录模板](acceptance/acceptance_record_template.csv)初始均为“未验收”。缺固件/CAN、车型差异、回充/烟雾/权限联动等项如实标记，按钮不代表合同整项完成。
 
-请求都携带Authorization: Bearer <本机令牌>。
-- GET /status：连接、话题、订阅、计数、IMU/里程计反馈预览。
-- GET /layout：当前布局。
-- POST /layout：{name,data}，只接受3D/Plot/Image/RawMessages，没有用户脚本或发布面板。
-- POST /connect：{url}，只接受ws/wss数据源。
-- GET /screenshot：PNG截图。
-- 切换前的布局自动备份至%APPDATA%\foxglove-studio-cn\demo-layout-backups。
-- 接口不能发速度、目标、服务调用或执行shell。实际键盘/导航操作仍经过已有机器人门控。
-- 18份布局位于layouts/，生成器build_layouts.py可重建。16UC1深度图用0–8000 mm彩色显示。
+[原生组件清单及官方参考](NATIVE_COMPONENTS.md)
 
-## 验证
+## 开发验证
 
-2026-10-08：
-- 网页生产构建、TypeScript检查、Windows x64 NSIS打包通过。
-- 18布局校验、禁用脚本/命令面板、HTTP鉴权/Origin/路由/备份测试通过。
-- 本机模拟fixture在18766端口验证绘图和ROS2 CDR RGB-D解码，明确标SIMULATED，无ROS连接。
-- 真实IMU曲线、RGB画面、彩色深度、融合/去畸变LaserScan及3D场景已在本机显示。
-- 启动/停止通过既有launch，未下发实车运动目标或速度指令。
-- 01/02实车键盘运动、导航/巡航/返航等闭环仍待现场验收。
-- 远端一次高负载导致SSH/数据流中断；用户重启后连接恢复并复验。未改动其他运行服务。
-- 切换功能前刷新可视化连接，避免已停止话题的协议告警残留；不修改机器人数据。
-- 现场图像和截图仅保存在本机应用数据目录，不上传公开源码仓库。
+- `node --test integrations/luka-contract-demo/test_native_control.cjs`：5项方向控制模拟回归。
+- 远端命令及现有launch/runner回归54项；ROS域188的模拟Nav2/安全门传输回归1项。
+- TypeScript、web打包、Windows打包与实际窗口读回单独验证。
+- 本次测试没有向实车发送速度或目标；合同现场验收按25项手册执行。
 
-## 回退
-
-卸载新版中文版即可撤销Windows程序；源码改动在独立分支。
-官方3.3.0的用户布局/存储已备份在：
-%LOCALAPPDATA%\luka-contract-demo\backups\official-foxglove-3.3.0-20261008。
-远端只改动examples的布局选择与manifest，不修改算法参数、ROS消息包或安全门。
+源文件`ros/native_commands.py`部署至远端`src/examples/contract_demo/_shared/`，由示例launch启动，是现有Nav2和地图导出器的命令适配层，不新增运动控制器。

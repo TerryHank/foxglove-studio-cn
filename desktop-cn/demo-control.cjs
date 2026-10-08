@@ -4,7 +4,7 @@ const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
 
-const PANEL_TYPES = new Set(["3D", "Plot", "Image", "RawMessages"]);
+const PANEL_TYPES = new Set(["3D", "Plot", "Image", "RawMessages", "LukaConsole"]);
 
 function validateLayout(body) {
   const data = body?.data;
@@ -26,7 +26,7 @@ function validateLayout(body) {
   }
   for (const id of Object.keys(data.configById)) {
     if (!PANEL_TYPES.has(id.split("!")[0]) || !leaves.includes(id)) {
-      throw new Error("Only built-in read-only demo panels are supported");
+      throw new Error("Only built-in demo panels and the fixed Luka operation console are supported");
     }
   }
   if (leaves.some((id) => !Object.hasOwn(data.configById, id))) {

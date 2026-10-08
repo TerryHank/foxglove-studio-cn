@@ -22,7 +22,7 @@ description: "Operate the local Foxglove Studio CN desktop through MCP: inspect 
 
 ## 布局工作流
 
-读取当前布局和实际话题后再改配置。只有3D、Plot、Image、RawMessages四类内置面板可用；不插入用户脚本或Publish面板。需要新布局/具体字段配置时读 [references/layouts.md](references/layouts.md)。
+读取当前布局和实际话题后再改配置。支持3D、Plot、Image、RawMessages及原生LukaConsole（ROS发布/服务按钮与本地验收步骤）；不插入用户脚本或Publish面板。LukaConsole原生方向/导航/返航按钮由操作者点击，不把创建布局视为模型执行运动的授权。需要新布局/具体字段配置时读 [references/layouts.md](references/layouts.md)。
 
 修改后用get_layout读回，再检查get_status的订阅、消息计数和problems；最后截图观察实际画面。消息未到、话题缺失或字段不匹配时如实报告，不把空面板算演示通过。不要因为一条错误就重启机器人或切换运行服务。
 

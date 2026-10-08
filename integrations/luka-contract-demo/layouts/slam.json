@@ -25,6 +25,15 @@
       "transforms": {},
       "layers": {},
       "version": 1,
+      "publish": {
+        "type": "pose",
+        "poseTopic": "/contract_demo/goal_pose",
+        "pointTopic": "/clicked_point",
+        "poseEstimateTopic": "/initialpose",
+        "poseEstimateXDeviation": 0.25,
+        "poseEstimateYDeviation": 0.25,
+        "poseEstimateThetaDeviation": 0.26
+      },
       "topics": {
         "/map": {
           "visible": true,
@@ -83,18 +92,42 @@
       "diffTopicPath": "",
       "showFullMessageForDiff": false,
       "fontSize": 14
+    },
+    "RawMessages!luka3": {
+      "foxglovePanelTitle": "地图导出结果（请求接受不等于保存完成）",
+      "topicPath": "/contract_demo/map_status",
+      "expansion": "all",
+      "diffEnabled": false,
+      "diffMethod": "previous message",
+      "diffTopicPath": "",
+      "showFullMessageForDiff": false,
+      "fontSize": 14
+    },
+    "LukaConsole!slam": {
+      "caseNumber": "09",
+      "section": "navigation"
     }
   },
   "layout": {
     "direction": "row",
     "first": {
-      "direction": "column",
-      "first": "3D!luka0",
-      "second": "Plot!luka1",
+      "direction": "row",
+      "first": {
+        "direction": "column",
+        "first": "3D!luka0",
+        "second": "Plot!luka1",
+        "splitPercentage": 55
+      },
+      "second": {
+        "direction": "column",
+        "first": "RawMessages!luka2",
+        "second": "RawMessages!luka3",
+        "splitPercentage": 55
+      },
       "splitPercentage": 55
     },
-    "second": "RawMessages!luka2",
-    "splitPercentage": 55
+    "second": "LukaConsole!slam",
+    "splitPercentage": 52
   },
   "globalVariables": {},
   "userNodes": {},

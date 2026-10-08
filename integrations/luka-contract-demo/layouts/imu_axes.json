@@ -89,23 +89,32 @@
       "diffTopicPath": "",
       "showFullMessageForDiff": false,
       "fontSize": 14
+    },
+    "LukaConsole!imu_axes": {
+      "caseNumber": "03",
+      "section": "navigation"
     }
   },
   "layout": {
     "direction": "row",
     "first": {
-      "direction": "column",
-      "first": "Plot!luka0",
-      "second": "Plot!luka1",
+      "direction": "row",
+      "first": {
+        "direction": "column",
+        "first": "Plot!luka0",
+        "second": "Plot!luka1",
+        "splitPercentage": 55
+      },
+      "second": {
+        "direction": "column",
+        "first": "RawMessages!luka2",
+        "second": "RawMessages!luka3",
+        "splitPercentage": 55
+      },
       "splitPercentage": 55
     },
-    "second": {
-      "direction": "column",
-      "first": "RawMessages!luka2",
-      "second": "RawMessages!luka3",
-      "splitPercentage": 55
-    },
-    "splitPercentage": 55
+    "second": "LukaConsole!imu_axes",
+    "splitPercentage": 52
   },
   "globalVariables": {},
   "userNodes": {},

@@ -28,6 +28,12 @@ import diagnosticSummaryThumbnail from "./diagnostics/thumbnails/diagnostic-summ
 
 export const getBuiltin: (t: TFunction<"panels">) => PanelInfo[] = (t) => [
   {
+    title: "Luka 操作台与验收",
+    type: "LukaConsole",
+    description: "现有机器人方向控制、导航、巡航、语音及逐项验收指南",
+    module: async () => await import("./LukaConsole"),
+  },
+  {
     title: t("3D"),
     type: "3D",
     description: t("3DPanelDescription"),

@@ -1,11 +1,11 @@
-"""Build read-only Foxglove layouts against the actual Luka ROS topic names."""
+"""Build measured-data layouts with native guarded ROS controls."""
 import json
 from pathlib import Path
 
 HERE=Path(__file__).resolve().parent
 COLORS=["#38bdf8","#fb923c","#4ade80","#f472b6"]
 NAMES={
- "drive_odom":"01/02 底盘通信·编码器·键盘控制",
+ "drive_odom":"01/02 底盘通信·编码器·方向控制",
  "imu_axes":"03 IMU三轴数据与滤波",
  "lidar":"04 双雷达滤波与去畸变","camera":"05 RGB-D相机",
  "interfaces":"07 实时消息接口","layers":"08 分层ROS节点",
@@ -40,6 +40,7 @@ def scene(frame,topics):
         "cameraState":{"distance":6,"perspective":False,"phi":0,"thetaOffset":0,"targetOffset":[0,0,0]},
         "scene":{"transforms":{"showLabel":True,"axisScale":.3,"enablePreloading":True}},
         "transforms":{},"layers":{},"version":1,
+        "publish":{"type":"pose","poseTopic":"/contract_demo/goal_pose","pointTopic":"/clicked_point","poseEstimateTopic":"/initialpose","poseEstimateXDeviation":.25,"poseEstimateYDeviation":.25,"poseEstimateThetaDeviation":.26},
         "topics":{t:{"visible":True,"color":COLORS[i%4],"pointSize":3,"decayTime":.5 if "scan" in t else 0}
                   for i,t in enumerate(topics)}})
 
@@ -58,7 +59,7 @@ def layout(profile):
       "slam":[scene("map",["/map","/scan","/wheel/odom"]),odom,raw("/map.info","建图尺寸与分辨率")],
       "map":[world,raw("/map.info","静态地图信息")],
       "localization":[world,raw("/amcl_pose","AMCL位姿与协方差")],
-      "navigation":[world,raw("/plan","规划路径"),raw("/hotel/navigation_status","导航状态"),gate],
+      "navigation":[world,raw("/plan","规划路径"),raw("/contract_demo/navigation_status","原生导航请求与结果"),gate],
       "avoidance":[world,raw("/collision_monitor_state","碰撞监视器"),gate],
       "business":[world,raw("/patrol/status","巡航状态"),raw("/home/status","软件Home状态")],
       "smoothing":[plot("导航速度链 / m/s",[(f"{t}.linear.x",label) for t,label in [("/nx/nav_raw","raw"),("/nx/nav_smoothed","smoothed"),("/nx/nav_guarded","guarded"),("/nx/nav_safe","safe")]]),gate],
@@ -69,18 +70,28 @@ def layout(profile):
       "diagnostics":[gate,raw("/hotel/mission/safety_status","任务安全状态"),raw("/voice/status","语音设备状态")],
     }
     panels=groups[profile]
+    if profile in {"slam","map"}:
+        panels.append(raw("/contract_demo/map_status","地图导出结果（请求接受不等于保存完成）"))
+    if profile in {"business","home","state_machine","smoothing","avoidance"}:
+        panels.append(raw("/contract_demo/navigation_status","暂存目标与Nav2结果"))
     ids=[f"{kind}!luka{i}" for i,(kind,_) in enumerate(panels)]
     def tree(leaves,depth=0):
         if len(leaves)==1:return leaves[0]
         middle=(len(leaves)+1)//2
         return {"direction":"row" if depth%2==0 else "column","first":tree(leaves[:middle],depth+1),
                 "second":tree(leaves[middle:],depth+1),"splitPercentage":55}
-    return {"name":NAMES[profile]+" · 待现场验收","data":{"configById":dict(zip(ids,[c for _,c in panels])),
-        "layout":tree(ids),"globalVariables":{},"userNodes":{},"playbackConfig":{"speed":1},"version":1}}
+    number=NAMES[profile][:2]
+    section="patrol" if profile in {"business","home","state_machine"} else "voice" if profile=="voice" else "system" if profile=="diagnostics" else "people" if profile=="face" else "navigation"
+    configs=dict(zip(ids,[c for _,c in panels]))
+    operations="LukaConsole!"+profile
+    configs[operations]={"caseNumber":number,"section":section}
+    mosaic={"direction":"row","first":tree(ids),"second":operations,"splitPercentage":52}
+    return {"name":NAMES[profile]+" · 待现场验收","data":{"configById":configs,
+        "layout":mosaic,"globalVariables":{},"userNodes":{},"playbackConfig":{"speed":1},"version":1}}
 
 if __name__=="__main__":
     target=HERE/"layouts"
     target.mkdir(exist_ok=True)
     for profile in NAMES:
         (target/(profile+".json")).write_text(json.dumps(layout(profile)["data"],ensure_ascii=False,indent=2)+"\n",encoding="utf-8",newline="\n")
-    print("Built",len(NAMES),"read-only layouts")
+    print("Built",len(NAMES),"native layouts")

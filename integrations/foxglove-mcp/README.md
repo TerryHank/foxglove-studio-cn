@@ -28,7 +28,7 @@
 | capture_screenshot | 返回MCP PNG ImageContent | 否 |
 | open_desktop | 打开/复用中文版及其API | 是 |
 
-布局只支持3D、Plot、Image、RawMessages；无用户脚本/发布面板/任意shell/ROS写工具。
+布局支持3D、Plot、Image、RawMessages和固定地址的LukaConsole；无用户脚本/发布面板/任意shell/ROS写工具。LukaConsole业务按钮由操作者点击，MCP不执行这些操作。
 这些工具不会启动机器人ROS硬件，不会发送速度或导航目标。
 
 ## 配置

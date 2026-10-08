@@ -25,6 +25,15 @@
       "transforms": {},
       "layers": {},
       "version": 1,
+      "publish": {
+        "type": "pose",
+        "poseTopic": "/contract_demo/goal_pose",
+        "pointTopic": "/clicked_point",
+        "poseEstimateTopic": "/initialpose",
+        "poseEstimateXDeviation": 0.25,
+        "poseEstimateYDeviation": 0.25,
+        "poseEstimateThetaDeviation": 0.26
+      },
       "topics": {
         "/scan": {
           "visible": true,
@@ -71,18 +80,27 @@
       "diffTopicPath": "",
       "showFullMessageForDiff": false,
       "fontSize": 14
+    },
+    "LukaConsole!lidar": {
+      "caseNumber": "04",
+      "section": "navigation"
     }
   },
   "layout": {
     "direction": "row",
     "first": {
-      "direction": "column",
-      "first": "3D!luka0",
-      "second": "RawMessages!luka1",
+      "direction": "row",
+      "first": {
+        "direction": "column",
+        "first": "3D!luka0",
+        "second": "RawMessages!luka1",
+        "splitPercentage": 55
+      },
+      "second": "RawMessages!luka2",
       "splitPercentage": 55
     },
-    "second": "RawMessages!luka2",
-    "splitPercentage": 55
+    "second": "LukaConsole!lidar",
+    "splitPercentage": 52
   },
   "globalVariables": {},
   "userNodes": {},

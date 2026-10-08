@@ -39,23 +39,32 @@
       "diffTopicPath": "",
       "showFullMessageForDiff": false,
       "fontSize": 14
+    },
+    "LukaConsole!voice": {
+      "caseNumber": "20",
+      "section": "voice"
     }
   },
   "layout": {
     "direction": "row",
     "first": {
-      "direction": "column",
-      "first": "RawMessages!luka0",
-      "second": "RawMessages!luka1",
+      "direction": "row",
+      "first": {
+        "direction": "column",
+        "first": "RawMessages!luka0",
+        "second": "RawMessages!luka1",
+        "splitPercentage": 55
+      },
+      "second": {
+        "direction": "column",
+        "first": "RawMessages!luka2",
+        "second": "RawMessages!luka3",
+        "splitPercentage": 55
+      },
       "splitPercentage": 55
     },
-    "second": {
-      "direction": "column",
-      "first": "RawMessages!luka2",
-      "second": "RawMessages!luka3",
-      "splitPercentage": 55
-    },
-    "splitPercentage": 55
+    "second": "LukaConsole!voice",
+    "splitPercentage": 52
   },
   "globalVariables": {},
   "userNodes": {},

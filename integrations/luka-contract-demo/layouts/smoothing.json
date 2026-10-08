@@ -51,13 +51,37 @@
       "diffTopicPath": "",
       "showFullMessageForDiff": false,
       "fontSize": 14
+    },
+    "RawMessages!luka2": {
+      "foxglovePanelTitle": "暂存目标与Nav2结果",
+      "topicPath": "/contract_demo/navigation_status",
+      "expansion": "all",
+      "diffEnabled": false,
+      "diffMethod": "previous message",
+      "diffTopicPath": "",
+      "showFullMessageForDiff": false,
+      "fontSize": 14
+    },
+    "LukaConsole!smoothing": {
+      "caseNumber": "15",
+      "section": "navigation"
     }
   },
   "layout": {
     "direction": "row",
-    "first": "Plot!luka0",
-    "second": "RawMessages!luka1",
-    "splitPercentage": 55
+    "first": {
+      "direction": "row",
+      "first": {
+        "direction": "column",
+        "first": "Plot!luka0",
+        "second": "RawMessages!luka1",
+        "splitPercentage": 55
+      },
+      "second": "RawMessages!luka2",
+      "splitPercentage": 55
+    },
+    "second": "LukaConsole!smoothing",
+    "splitPercentage": 52
   },
   "globalVariables": {},
   "userNodes": {},
