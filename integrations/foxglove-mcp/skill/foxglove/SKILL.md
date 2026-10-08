@@ -39,7 +39,7 @@ description: "Operate the local Foxglove Studio CN desktop through MCP: inspect 
 D:/Workspace/foxglove-studio-cn/integrations/luka-contract-demo/start_demo.ps1
 
 不带-Run时，只建立本机客户端、SSH桥接和选择布局：
-    
+
     pwsh -File D:/Workspace/foxglove-studio-cn/integrations/luka-contract-demo/start_demo.ps1 -Item 03
 
 带-Run会启动远端对应ROS launch，必须以用户请求演示该功能为依据。选择布局或读取数据不自动授权硬件启动、发航点或键盘运动。本MCP不提供这些运动工具；不要绕过已有底盘/导航门控。沿用会话中已获得的授权，不重复请求批准普通布局修改。
