@@ -25,6 +25,7 @@ import {
   DataSourceDialogItem,
 } from "@foxglove/studio-base/components/DataSourceDialog";
 import DocumentDropListener from "@foxglove/studio-base/components/DocumentDropListener";
+import { DemoControlAdapter } from "@foxglove/studio-base/components/DemoControlAdapter";
 import { EventsList } from "@foxglove/studio-base/components/EventsList";
 import KeyListener from "@foxglove/studio-base/components/KeyListener";
 import {
@@ -432,6 +433,7 @@ function WorkspaceContent(props: WorkspaceProps): JSX.Element {
 
   return (
     <PanelStateContextProvider>
+      <DemoControlAdapter />
       {dataSourceDialog.open && <DataSourceDialog />}
       <DocumentDropListener onDrop={dropHandler} allowedExtensions={allowedDropExtensions} />
       <SyncAdapters />

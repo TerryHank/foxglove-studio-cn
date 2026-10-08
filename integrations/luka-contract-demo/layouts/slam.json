@@ -1,0 +1,105 @@
+{
+  "configById": {
+    "3D!luka0": {
+      "foxglovePanelTitle": "实时地图·扫描·路径（无目标时等待）",
+      "followTf": "map",
+      "followMode": "follow-pose",
+      "cameraState": {
+        "distance": 6,
+        "perspective": false,
+        "phi": 0,
+        "thetaOffset": 0,
+        "targetOffset": [
+          0,
+          0,
+          0
+        ]
+      },
+      "scene": {
+        "transforms": {
+          "showLabel": true,
+          "axisScale": 0.3,
+          "enablePreloading": true
+        }
+      },
+      "transforms": {},
+      "layers": {},
+      "version": 1,
+      "topics": {
+        "/map": {
+          "visible": true,
+          "color": "#38bdf8",
+          "pointSize": 3,
+          "decayTime": 0
+        },
+        "/scan": {
+          "visible": true,
+          "color": "#fb923c",
+          "pointSize": 3,
+          "decayTime": 0.5
+        },
+        "/wheel/odom": {
+          "visible": true,
+          "color": "#4ade80",
+          "pointSize": 3,
+          "decayTime": 0
+        }
+      }
+    },
+    "Plot!luka1": {
+      "foxglovePanelTitle": "编码器逆解位置 / m",
+      "paths": [
+        {
+          "value": "/wheel/odom.pose.pose.position.x",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "x",
+          "color": "#38bdf8"
+        },
+        {
+          "value": "/wheel/odom.pose.pose.position.y",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "y",
+          "color": "#fb923c"
+        }
+      ],
+      "showLegend": true,
+      "legendDisplay": "top",
+      "showPlotValuesInLegend": true,
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "followingViewWidth": 30,
+      "sidebarDimension": 180
+    },
+    "RawMessages!luka2": {
+      "foxglovePanelTitle": "建图尺寸与分辨率",
+      "topicPath": "/map.info",
+      "expansion": "all",
+      "diffEnabled": false,
+      "diffMethod": "previous message",
+      "diffTopicPath": "",
+      "showFullMessageForDiff": false,
+      "fontSize": 14
+    }
+  },
+  "layout": {
+    "direction": "row",
+    "first": {
+      "direction": "column",
+      "first": "3D!luka0",
+      "second": "Plot!luka1",
+      "splitPercentage": 55
+    },
+    "second": "RawMessages!luka2",
+    "splitPercentage": 55
+  },
+  "globalVariables": {},
+  "userNodes": {},
+  "playbackConfig": {
+    "speed": 1
+  },
+  "version": 1
+}

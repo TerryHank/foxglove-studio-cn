@@ -3,6 +3,8 @@ const path = require("node:path");
 
 const APP_NAME = "Foxglove Studio 中文版";
 const BRIDGE_URL = "ws://localhost:8765";
+const DEMO_CONTROL = process.argv.includes("--demo-control");
+let mainWindow;
 
 app.setName(APP_NAME);
 // Keep every runtime path ASCII-only. Some Electron/Chromium helpers and
@@ -72,8 +74,10 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      backgroundThrottling: !DEMO_CONTROL,
     },
   });
+  mainWindow = window;
 
   window.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith("https://") || url.startsWith("http://")) {
@@ -82,11 +86,14 @@ function createWindow() {
     return { action: "deny" };
   });
 
-  const indexPath = path.join(process.resourcesPath, "app-web", "index.html");
+  const indexPath = app.isPackaged
+    ? path.join(process.resourcesPath, "app-web", "index.html")
+    : path.join(__dirname, "../web/.webpack/index.html");
   void window.loadFile(indexPath, {
     query: {
       ds: "foxglove-websocket",
       "ds.url": BRIDGE_URL,
+      ...(DEMO_CONTROL ? { demoControl: "true" } : {}),
     },
   });
 }
@@ -94,6 +101,9 @@ function createWindow() {
 app.whenReady().then(() => {
   installChineseMenu();
   createWindow();
+  if (DEMO_CONTROL) {
+    require("./demo-control.cjs").startDemoControl({ app, getWindow: () => mainWindow });
+  }
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
