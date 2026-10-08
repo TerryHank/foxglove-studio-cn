@@ -1,0 +1,11 @@
+interface:
+  display_name: "Foxglove 中文版控制"
+  short_description: "Control Foxglove CN layouts, connections, and screenshots"
+  default_prompt: "使用 $foxglove 查看本机 Foxglove 状态并配置可视化演示。"
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "foxglove-cn"
+      description: "Local Foxglove Studio CN visualization tools"
+policy:
+  allow_implicit_invocation: true
