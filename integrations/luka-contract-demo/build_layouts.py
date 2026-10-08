@@ -82,5 +82,5 @@ if __name__=="__main__":
     target=HERE/"layouts"
     target.mkdir(exist_ok=True)
     for profile in NAMES:
-        (target/(profile+".json")).write_text(json.dumps(layout(profile)["data"],ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+        (target/(profile+".json")).write_text(json.dumps(layout(profile)["data"],ensure_ascii=False,indent=2)+"\n",encoding="utf-8",newline="\n")
     print("Built",len(NAMES),"read-only layouts")
