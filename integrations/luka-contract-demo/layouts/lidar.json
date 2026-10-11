@@ -1,14 +1,14 @@
 {
   "configById": {
     "3D!luka0": {
-      "foxglovePanelTitle": "实时地图·扫描·路径（无目标时等待）",
+      "foxglovePanelTitle": "雷达三维扫描图",
       "followTf": "base_link",
       "followMode": "follow-pose",
       "cameraState": {
-        "distance": 6,
-        "perspective": false,
-        "phi": 0,
-        "thetaOffset": 0,
+        "distance": 9,
+        "perspective": true,
+        "phi": 0.9,
+        "thetaOffset": 0.5,
         "targetOffset": [
           0,
           0,
@@ -89,18 +89,18 @@
   "layout": {
     "direction": "row",
     "first": {
-      "direction": "row",
-      "first": {
-        "direction": "column",
-        "first": "3D!luka0",
-        "second": "RawMessages!luka1",
+      "direction": "column",
+      "first": "3D!luka0",
+      "second": {
+        "direction": "row",
+        "first": "RawMessages!luka1",
+        "second": "RawMessages!luka2",
         "splitPercentage": 55
       },
-      "second": "RawMessages!luka2",
-      "splitPercentage": 55
+      "splitPercentage": 78
     },
     "second": "LukaConsole!lidar",
-    "splitPercentage": 52
+    "splitPercentage": 72
   },
   "globalVariables": {},
   "userNodes": {},

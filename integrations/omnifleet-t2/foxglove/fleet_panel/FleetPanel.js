@@ -1,6 +1,6 @@
-export function initFleetPanel(context) {
+export function initFleetPanel(context,panelElement=context.panelElement) {
   const COMMAND='/fleet/ui/command', STATE='/fleet/ui/state';
-  const host=context.panelElement,root=document.createElement('div');host.append(root);
+  const host=panelElement,root=document.createElement('div');host.append(root);
   root.dataset.testid='fleet-panel';root.style.cssText='height:100%;box-sizing:border-box;overflow:auto;padding:12px;font:14px sans-serif;';
   root.innerHTML=`<style>
     .fleet-card{border:1px solid #8793a355;border-radius:8px;padding:10px;margin:10px 0;display:grid;gap:8px}
@@ -12,12 +12,13 @@ export function initFleetPanel(context) {
   </style>
   <div class="fleet-row"><strong style="font-size:1.2em;flex:1">多机协同</strong><button data-ui="smaller">−</button><button data-ui="larger">＋</button><button data-ui="reset">恢复</button></div>
   <div class="fleet-card"><strong>1 · 激活与选择车辆</strong><div data-ui="robots"></div><label>当前编辑车辆 <select class="fleet-panel-input" data-ui="selected"></select></label><div class="fleet-muted">激活只加入显示和任务选择，不会立即发车。无有效定位的车辆会显示等待状态。</div></div>
-  <div class="fleet-card"><strong>2 · 协同模式</strong><select class="fleet-panel-input" data-ui="mode"><option value="independent">每辆车独立规划航点</option><option value="leader">领航模式</option></select><div data-ui="formation"><label>领航车（编号1） <select class="fleet-panel-input" data-ui="leader"></select></label><label style="display:block;margin-top:8px">相邻车辆跟随距离（米） <input class="fleet-panel-input" style="width:90px" type="number" min="1.4" max="5" step="0.1" data-ui="spacing"></label><div class="fleet-muted">编号2跟随领航车。距离按两车中心沿行驶轨迹计算；转弯保留走过的轨迹。</div></div></div>
-  <div class="fleet-card"><strong>3 · 所选车辆的多点路线</strong><div class="fleet-muted">在“多机协同3D”工具栏使用“发布点”或“发布位姿”添加航点。也可逐行输入：x, y, 朝向角度（°）。</div><textarea class="fleet-panel-input" rows="6" data-ui="route" placeholder="1.0, 0.0, 0&#10;2.0, 0.0, 0"></textarea><div class="fleet-row"><button data-ui="save">保存航点</button><button data-ui="undo">删除最后点</button><button data-ui="clear">清空路线</button><button data-ui="preview">预检路线</button></div><div class="fleet-muted">浅色线为共享地图预检路径，实色线为车辆Nav2实际路径；最终点保留所填朝向。</div></div>
-  <div class="fleet-row"><button data-ui="start" style="background:#2475c9;color:white">开始所选车辆</button><button data-ui="stop" style="background:#a63838;color:white">停止所选任务</button></div><p class="fleet-status" data-ui="status">正在连接协同后台…</p><div class="fleet-muted" data-ui="health"></div><div class="fleet-card"><strong>任务状态</strong><div data-ui="tasks">暂无任务</div></div>`;
+  <div class="fleet-card"><strong>2 · 协同模式</strong><select class="fleet-panel-input" data-ui="mode"><option value="independent">Nav2 固定航点 · FollowWaypoints</option><option value="leader">Nav2 动态领航跟随</option></select><div data-ui="formation"><label>领航车（编号1） <select class="fleet-panel-input" data-ui="leader"></select></label><label style="display:block;margin-top:8px">相邻车辆跟随距离（米） <input class="fleet-panel-input" style="width:90px" type="number" min="1.4" max="5" step="0.1" data-ui="spacing"></label><div class="fleet-muted">编号2跟随领航车。目标位于领车后方；跟车使用 GoalUpdater → ComputePathToPose → FollowPath 动态规划，转弯可能选择不同路径。</div></div></div>
+  <div class="fleet-card"><strong>3 · 所选车辆的多点路线</strong><div class="fleet-muted">在“多机协同3D”工具栏使用“发布点”或“发布位姿”添加航点。也可逐行输入：x, y, 朝向角度（°）。</div><textarea class="fleet-panel-input" rows="6" data-ui="route" placeholder="1.0, 0.0, 0&#10;2.0, 0.0, 0"></textarea><div class="fleet-row"><button data-ui="save">保存航点</button><button data-ui="undo">删除最后点</button><button data-ui="clear">清空路线</button><button data-ui="clearAll" title="清空两车已保存航点及当前草稿；有任务时请先停止">清空两车航点</button><button data-ui="preview">预检路线</button></div><div class="fleet-muted">浅色线为共享地图预检路径，实色线为车辆Nav2实际路径；最终点保留所填朝向。</div></div>
+  <div class="fleet-row"><button data-ui="arm">开启协同调度（不发车）</button><button data-ui="startAll">开始全部固定路线</button><button data-ui="stopAll" style="background:#a63838;color:white">停止全部任务</button></div><div class="fleet-muted" data-ui="architecture"></div><div class="fleet-muted" data-ui="recording"></div><div class="fleet-row"><button data-ui="start" style="background:#2475c9;color:white">开始所选车辆</button><button data-ui="stop" style="background:#a63838;color:white">停止所选任务</button></div><p class="fleet-status" data-ui="status">正在连接协同后台…</p><div class="fleet-muted" data-ui="health"></div><div class="fleet-card"><strong>任务状态</strong><div data-ui="tasks">暂无任务</div></div>`;
   const ui={};root.querySelectorAll('[data-ui]').forEach(e=>{ui[e.dataset.ui]=e;e.dataset.testid='fleet-'+e.dataset.ui;});
   const reload=document.createElement('button');reload.textContent='载入已保存';reload.dataset.testid='fleet-reload';ui.save.after(reload);ui.reload=reload;
-  let state,revision=-1,disposed=false,dirty=false,serial=0,receivedAt=0,draftBase=null,draftOwner=null;const pending=new Map(),rows=new Map();
+  const session=globalThis.crypto?.randomUUID?.()??Math.random().toString(36).slice(2);
+  let state,revision=-1,disposed=false,dirty=false,serial=0,receivedAt=0,draftBase=null,draftOwner=null;const pending=new Map(),rows=new Map();let operationEpoch=0;
   let scale=Number(context.initialState?.fontScale)||1;
   const setScale=()=>{root.style.fontSize=(14*scale)+'px';context.saveState?.({...context.initialState,fontScale:scale});};
   root.style.fontSize=(14*scale)+'px';
@@ -25,11 +26,12 @@ export function initFleetPanel(context) {
   function message(text,error=false){if(disposed)return;ui.status.textContent=text;ui.status.style.borderColor=error?'#d65c5c':'#4389dc';}
   function send(op,body={}) {
     if(!state)return Promise.reject(Error('协同后台尚未连接'));
-    const id='fg-'+Date.now().toString(36)+'-'+(++serial);
+    const id='fg-'+session+'-'+(++serial);
     return new Promise((resolve,reject)=>{
       const timer=setTimeout(()=>{pending.delete(id);reject(Error('请求结果未确认，请先查看任务状态，勿重复发车'));render();},15000);
       pending.set(id,{resolve,reject,timer});
-      try{context.publish(COMMAND,{data:JSON.stringify({id,created_at:Date.now()/1000,op,revision:state.revision,...body})});}
+      // Keep JSON ASCII on the wire: the installed CDR writer counts characters as bytes.
+      try{context.publish(COMMAND,{data:JSON.stringify({id,created_at:(state.server_time??Date.now()/1000)+(performance.now()-receivedAt)/1000,source:context.initialState?.operatorLabel??'Foxglove',op,revision:state.revision,...body}).replace(/[\u007f-\uffff]/g,c=>'\\u'+c.charCodeAt(0).toString(16).padStart(4,'0'))});}
       catch(error){clearTimeout(timer);pending.delete(id);reject(error);}
       render();
     });
@@ -47,13 +49,17 @@ export function initFleetPanel(context) {
   ui.save.onclick=()=>run(saveRoute);
   ui.undo.onclick=()=>run(()=>{const robot=state.config.selected;return configure({routes:{...state.config.routes,[robot]:state.config.routes[robot].slice(0,-1)}});});
   ui.clear.onclick=()=>run(()=>configure({routes:{...state.config.routes,[state.config.selected]:[]}}));
+  ui.clearAll.onclick=()=>run(async()=>{await configure({routes:Object.fromEntries(Object.keys(state.config.routes).map(id=>[id,[]]))});dirty=false;draftBase=draftOwner=null;revision=-1;render();});
   ui.preview.onclick=()=>run(async()=>{if(dirty)await saveRoute();await send('preview',{robot_id:state.config.selected});});
-  ui.start.onclick=()=>run(async()=>{if(dirty)await saveRoute();const robot=state.config.mode==='leader'?state.config.leader:state.config.selected;await send('preview',{robot_id:robot});await send('start',{robot_id:robot});});
-  ui.stop.onclick=()=>run(()=>send('stop'));
+  ui.start.onclick=()=>{const epoch=operationEpoch;run(async()=>{if(dirty)await saveRoute();const robot=state.config.mode==='leader'?state.config.leader:state.config.selected;await send('preview',{robot_id:robot});if(epoch!==operationEpoch)throw Error('开始请求已取消');await send('start',{robot_id:robot});});};
+  ui.stop.onclick=()=>{operationEpoch++;run(()=>send('stop'));};
+  ui.arm.onclick=()=>{if(state.motion_enabled)operationEpoch++;run(()=>send('motion',{enabled:!state.motion_enabled}));};
+  ui.stopAll.onclick=()=>{operationEpoch++;run(()=>send('stop_all'));};
+  ui.startAll.onclick=()=>{const epoch=operationEpoch;run(async()=>{if(dirty)await saveRoute();await send('preview_all');if(epoch!==operationEpoch)throw Error('开始请求已取消');await send('start_all');});};
   function options(select,active){const chosen=select.value;select.replaceChildren();for(const r of active){const o=document.createElement('option');o.value=r.id;o.textContent=r.name;select.append(o);}select.value=chosen;}
   function render(){
     if(!state||disposed)return;
-    const c=state.config,active=state.robots.filter(r=>r.active),robot=state.robots.find(r=>r.id===c.selected),stale=Date.now()-receivedAt>2000,waiting=pending.size>0||stale;
+    const c=state.config,active=state.robots.filter(r=>r.active),robot=state.robots.find(r=>r.id===c.selected),stale=performance.now()-receivedAt>2000,waiting=pending.size>0||stale;
     if(stale)message('协同后台数据已中断，等待重新连接',true);
     if(revision!==state.revision){
       revision=state.revision;ui.robots.replaceChildren();rows.clear();
@@ -74,19 +80,29 @@ export function initFleetPanel(context) {
       if(!dirty)ui.route.value=(c.routes[c.selected]??[]).map(p=>[p[0].toFixed(3),p[1].toFixed(3),(p[2]*180/Math.PI).toFixed(1)].join(', ')).join('\n');
     }
     const healthNames={MANUAL:'手动控制',OFFLINE:'离线',READY:'就绪',ESTOP:'急停',FAULT:'故障',WAITING_ALIGNMENT:'等待协同对齐',WAITING_CONTROL_GATE:'等待控制接口',WAITING_LOCALIZATION_OR_NAV2:'等待定位/导航'};
-    for(const r of state.robots){const e=rows.get(r.id);e.check.disabled=e.name.disabled=waiting||state.busy;e.rank.disabled=waiting||state.busy||!r.active;e.health.textContent=stale?'通讯中断':(r.online?'在线':'离线')+' · '+(r.pose?'定位可显示':'等待共享定位')+' · '+(healthNames[r.health]??r.health)+(r.reason?' · '+r.reason:'');}
+    for(const r of state.robots){const e=rows.get(r.id);e.check.disabled=e.name.disabled=waiting||state.busy;e.rank.disabled=waiting||state.busy||!r.active;e.health.textContent=stale?'通讯中断':(r.online?'在线':'离线')+' · '+(r.pose?'定位可显示':'等待共享定位')+' · '+(healthNames[r.health]??r.health)+(r.pose_age!=null?' · 定位 '+Math.round(r.pose_age*1000)+' ms':'')+(r.execution_backend?' · '+r.execution_backend:'')+(r.effective_controller?' · '+r.effective_controller:'')+(r.reason?' · '+r.reason:'');}
     ui.selected.disabled=waiting||!active.length;ui.mode.disabled=ui.leader.disabled=ui.spacing.disabled=waiting||state.busy;
     ui.formation.style.display=c.mode==='leader'?'block':'none';
     const readonly=!robot||robot.busy||(c.mode==='leader'&&c.selected!==c.leader);
     ui.route.disabled=waiting||readonly;for(const key of ['save','reload','undo','clear','preview'])ui[key].disabled=waiting||readonly;
+    ui.clearAll.disabled=waiting||state.busy||state.robots.some(r=>r.busy);
     ui.start.textContent=c.mode==='leader'?'开始领航编队':'开始所选车辆';ui.stop.textContent=c.mode==='leader'?'停止编队任务':'停止所选任务';
-    ui.start.disabled=waiting||readonly||!state.motion_enabled||!robot?.ready;ui.stop.disabled=waiting||!state.busy;
-    ui.health.textContent=state.motion_enabled?'运动接口已启用；开始时仍检查定位、地图和车间安全条件。':'当前为不运动验收模式：可激活显示、设置路线和预检，发车按钮禁用。';
+    const owner=state.robots.find(r=>r.id===(c.mode==='leader'?c.leader:c.selected));
+    const eligible=r=>r?.start_eligible??r?.ready;
+    ui.start.disabled=waiting||!state.motion_enabled||!eligible(owner)||owner?.busy||!c.routes[owner?.id]?.length||(c.mode==='leader'&&(state.busy||active.some(r=>!eligible(r))));
+    ui.stop.disabled=!state.busy&&!pending.size;
+    ui.arm.textContent=state.motion_enabled?'锁定协同（停止任务）':'开启协同调度（不发车）';
+    ui.arm.disabled=stale||(!state.motion_enabled&&(waiting||state.busy||!active.length));
+    ui.startAll.disabled=waiting||!state.motion_enabled||c.mode!=='independent'||!active.length||active.some(r=>!eligible(r)||r.busy||!c.routes[r.id]?.length);
+    ui.stopAll.disabled=!state.busy&&!pending.size;
+    ui.architecture.textContent='操作端：'+(context.initialState?.operatorLabel??'Foxglove')+' · 唯一调度后端：198 / MSC · 阶段：'+(state.mission?.state??'IDLE');
+    ui.recording.textContent=state.recording?.active?'任务录包：'+state.recording.path:state.recording?.path?'最近录包：'+state.recording.path:'开始任务时自动录制两车状态、TF、路径与速度';
+    ui.health.textContent=state.motion_enabled?'已开启协同；点击开始后仍须完成预检、申请 FLEET 执行权及启动确认。':'协同已锁定。可编辑与预检；点击开启仅解锁调度，不立即发车。';
     ui.tasks.textContent=Object.entries(state.tasks).map(([id,t])=>`${t.owner||t.robot_id||'待分配'}：${t.state}${t.reason?' · '+t.reason:''}`).join('\n')||'暂无独立任务';
     if(c.mode==='leader')ui.tasks.textContent+='\n编队：'+(state.mission?.state??'IDLE');
   }
-  context.advertise?.(COMMAND,'std_msgs/msg/String');context.watch('currentFrame');context.subscribe([{topic:STATE}]);
+  context.advertise?.(COMMAND,'std_msgs/String',{datatypes:new Map([['std_msgs/String',{definitions:[{name:'data',type:'string',isArray:false,isComplex:false}]}]])});context.watch('currentFrame');context.subscribe([{topic:STATE},{topic:COMMAND}]);
   const healthTimer=setInterval(render,500);
-  context.onRender=(renderState,done)=>{try{for(const event of renderState.currentFrame??[]){if(event.topic!==STATE)continue;state=JSON.parse(event.message.data);receivedAt=Date.now();const ack=state.ack;if(ack&&!ack.pending){const request=pending.get(ack.id);if(request){clearTimeout(request.timer);pending.delete(ack.id);ack.ok?request.resolve(ack):request.reject(Error(ack.message));}message(ack.message,!ack.ok);}render();}}catch(error){message('状态解析失败：'+error.message,true);}finally{done();}};
+  context.onRender=(renderState,done)=>{try{for(const event of renderState.currentFrame??[]){if(event.topic!==STATE)continue;state=JSON.parse(event.message.data);receivedAt=performance.now();const ack=state.ack;if(ack&&!ack.pending){const request=pending.get(ack.id);if(request){clearTimeout(request.timer);pending.delete(ack.id);ack.ok?request.resolve(ack):request.reject(Error(ack.message));}message(ack.message,!ack.ok);}render();}}catch(error){message('状态解析失败：'+error.message,true);}finally{done();}};
   return()=>{disposed=true;clearInterval(healthTimer);for(const p of pending.values()){clearTimeout(p.timer);p.reject(Error('面板已关闭'));}pending.clear();context.onRender=undefined;context.subscribe([]);context.unadvertise?.(COMMAND);root.remove();};
 }

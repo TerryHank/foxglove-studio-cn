@@ -111,23 +111,23 @@
   "layout": {
     "direction": "row",
     "first": {
-      "direction": "row",
-      "first": {
-        "direction": "column",
-        "first": "3D!luka0",
-        "second": "Plot!luka1",
-        "splitPercentage": 55
-      },
+      "direction": "column",
+      "first": "3D!luka0",
       "second": {
-        "direction": "column",
-        "first": "RawMessages!luka2",
+        "direction": "row",
+        "first": {
+          "direction": "column",
+          "first": "Plot!luka1",
+          "second": "RawMessages!luka2",
+          "splitPercentage": 55
+        },
         "second": "RawMessages!luka3",
         "splitPercentage": 55
       },
-      "splitPercentage": 55
+      "splitPercentage": 78
     },
     "second": "LukaConsole!slam",
-    "splitPercentage": 52
+    "splitPercentage": 72
   },
   "globalVariables": {},
   "userNodes": {},

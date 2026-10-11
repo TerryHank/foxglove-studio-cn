@@ -1,0 +1,2234 @@
+{
+  "01": {
+    "configById": {
+      "Plot!luka0": {
+        "foxglovePanelTitle": "编码器逆解位置 / m",
+        "paths": [
+          {
+            "value": "/wheel/odom.pose.pose.position.x",
+            "enabled": true,
+            "timestampMethod": "receiveTime",
+            "label": "x",
+            "color": "#38bdf8"
+          },
+          {
+            "value": "/wheel/odom.pose.pose.position.y",
+            "enabled": true,
+            "timestampMethod": "receiveTime",
+            "label": "y",
+            "color": "#fb923c"
+          }
+        ],
+        "showLegend": true,
+        "legendDisplay": "top",
+        "showPlotValuesInLegend": true,
+        "showXAxisLabels": true,
+        "showYAxisLabels": true,
+        "isSynced": true,
+        "xAxisVal": "timestamp",
+        "followingViewWidth": 30,
+        "sidebarDimension": 180
+      },
+      "Plot!luka1": {
+        "foxglovePanelTitle": "实测车体速度",
+        "paths": [
+          {
+            "value": "/wheel/odom.twist.twist.linear.x",
+            "enabled": true,
+            "timestampMethod": "receiveTime",
+            "label": "linear.x",
+            "color": "#38bdf8"
+          },
+          {
+            "value": "/wheel/odom.twist.twist.linear.y",
+            "enabled": true,
+            "timestampMethod": "receiveTime",
+            "label": "linear.y",
+            "color": "#fb923c"
+          },
+          {
+            "value": "/wheel/odom.twist.twist.angular.z",
+            "enabled": true,
+            "timestampMethod": "receiveTime",
+            "label": "angular.z",
+            "color": "#4ade80"
+          }
+        ],
+        "showLegend": true,
+        "legendDisplay": "top",
+        "showPlotValuesInLegend": true,
+        "showXAxisLabels": true,
+        "showYAxisLabels": true,
+        "isSynced": true,
+        "xAxisVal": "timestamp",
+        "followingViewWidth": 30,
+        "sidebarDimension": 180
+      },
+      "RawMessages!luka2": {
+        "foxglovePanelTitle": "编码器里程计原始消息",
+        "topicPath": "/wheel/odom",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "RawMessages!luka3": {
+        "foxglovePanelTitle": "现有底盘安全门",
+        "topicPath": "/nx/web_teleop_status",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "LukaConsole!drive_odom": {
+        "caseNumber": "01",
+        "section": "navigation"
+      }
+    },
+    "layout": {
+      "direction": "row",
+      "first": {
+        "direction": "column",
+        "first": {
+          "direction": "row",
+          "first": "Plot!luka0",
+          "second": "Plot!luka1",
+          "splitPercentage": 55
+        },
+        "second": {
+          "direction": "row",
+          "first": "RawMessages!luka2",
+          "second": "RawMessages!luka3",
+          "splitPercentage": 55
+        },
+        "splitPercentage": 78
+      },
+      "second": "LukaConsole!drive_odom",
+      "splitPercentage": 72
+    },
+    "globalVariables": {},
+    "userNodes": {},
+    "playbackConfig": {
+      "speed": 1
+    },
+    "version": 1
+  },
+  "02": {
+    "configById": {
+      "Plot!luka0": {
+        "foxglovePanelTitle": "编码器逆解位置 / m",
+        "paths": [
+          {
+            "value": "/wheel/odom.pose.pose.position.x",
+            "enabled": true,
+            "timestampMethod": "receiveTime",
+            "label": "x",
+            "color": "#38bdf8"
+          },
+          {
+            "value": "/wheel/odom.pose.pose.position.y",
+            "enabled": true,
+            "timestampMethod": "receiveTime",
+            "label": "y",
+            "color": "#fb923c"
+          }
+        ],
+        "showLegend": true,
+        "legendDisplay": "top",
+        "showPlotValuesInLegend": true,
+        "showXAxisLabels": true,
+        "showYAxisLabels": true,
+        "isSynced": true,
+        "xAxisVal": "timestamp",
+        "followingViewWidth": 30,
+        "sidebarDimension": 180
+      },
+      "Plot!luka1": {
+        "foxglovePanelTitle": "实测车体速度",
+        "paths": [
+          {
+            "value": "/wheel/odom.twist.twist.linear.x",
+            "enabled": true,
+            "timestampMethod": "receiveTime",
+            "label": "linear.x",
+            "color": "#38bdf8"
+          },
+          {
+            "value": "/wheel/odom.twist.twist.linear.y",
+            "enabled": true,
+            "timestampMethod": "receiveTime",
+            "label": "linear.y",
+            "color": "#fb923c"
+          },
+          {
+            "value": "/wheel/odom.twist.twist.angular.z",
+            "enabled": true,
+            "timestampMethod": "receiveTime",
+            "label": "angular.z",
+            "color": "#4ade80"
+          }
+        ],
+        "showLegend": true,
+        "legendDisplay": "top",
+        "showPlotValuesInLegend": true,
+        "showXAxisLabels": true,
+        "showYAxisLabels": true,
+        "isSynced": true,
+        "xAxisVal": "timestamp",
+        "followingViewWidth": 30,
+        "sidebarDimension": 180
+      },
+      "RawMessages!luka2": {
+        "foxglovePanelTitle": "编码器里程计原始消息",
+        "topicPath": "/wheel/odom",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "RawMessages!luka3": {
+        "foxglovePanelTitle": "现有底盘安全门",
+        "topicPath": "/nx/web_teleop_status",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "LukaConsole!drive_odom": {
+        "caseNumber": "02",
+        "section": "navigation"
+      }
+    },
+    "layout": {
+      "direction": "row",
+      "first": {
+        "direction": "column",
+        "first": {
+          "direction": "row",
+          "first": "Plot!luka0",
+          "second": "Plot!luka1",
+          "splitPercentage": 55
+        },
+        "second": {
+          "direction": "row",
+          "first": "RawMessages!luka2",
+          "second": "RawMessages!luka3",
+          "splitPercentage": 55
+        },
+        "splitPercentage": 78
+      },
+      "second": "LukaConsole!drive_odom",
+      "splitPercentage": 72
+    },
+    "globalVariables": {},
+    "userNodes": {},
+    "playbackConfig": {
+      "speed": 1
+    },
+    "version": 1
+  },
+  "03": {
+    "configById": {
+      "Plot!luka0": {
+        "foxglovePanelTitle": "线加速度 / m/s²",
+        "paths": [
+          {
+            "value": "/imu/data.linear_acceleration.x",
+            "enabled": true,
+            "timestampMethod": "receiveTime",
+            "label": "x",
+            "color": "#38bdf8"
+          },
+          {
+            "value": "/imu/data.linear_acceleration.y",
+            "enabled": true,
+            "timestampMethod": "receiveTime",
+            "label": "y",
+            "color": "#fb923c"
+          },
+          {
+            "value": "/imu/data.linear_acceleration.z",
+            "enabled": true,
+            "timestampMethod": "receiveTime",
+            "label": "z",
+            "color": "#4ade80"
+          }
+        ],
+        "showLegend": true,
+        "legendDisplay": "top",
+        "showPlotValuesInLegend": true,
+        "showXAxisLabels": true,
+        "showYAxisLabels": true,
+        "isSynced": true,
+        "xAxisVal": "timestamp",
+        "followingViewWidth": 30,
+        "sidebarDimension": 180
+      },
+      "Plot!luka1": {
+        "foxglovePanelTitle": "角速度 / rad/s",
+        "paths": [
+          {
+            "value": "/imu/data.angular_velocity.x",
+            "enabled": true,
+            "timestampMethod": "receiveTime",
+            "label": "x",
+            "color": "#38bdf8"
+          },
+          {
+            "value": "/imu/data.angular_velocity.y",
+            "enabled": true,
+            "timestampMethod": "receiveTime",
+            "label": "y",
+            "color": "#fb923c"
+          },
+          {
+            "value": "/imu/data.angular_velocity.z",
+            "enabled": true,
+            "timestampMethod": "receiveTime",
+            "label": "z",
+            "color": "#4ade80"
+          }
+        ],
+        "showLegend": true,
+        "legendDisplay": "top",
+        "showPlotValuesInLegend": true,
+        "showXAxisLabels": true,
+        "showYAxisLabels": true,
+        "isSynced": true,
+        "xAxisVal": "timestamp",
+        "followingViewWidth": 30,
+        "sidebarDimension": 180
+      },
+      "RawMessages!luka2": {
+        "foxglovePanelTitle": "六轴IMU与时间戳",
+        "topicPath": "/imu/data",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "RawMessages!luka3": {
+        "foxglovePanelTitle": "可选EKF（with_ekf:=true）",
+        "topicPath": "/contract_demo/odometry/filtered",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "LukaConsole!imu_axes": {
+        "caseNumber": "03",
+        "section": "navigation"
+      }
+    },
+    "layout": {
+      "direction": "row",
+      "first": {
+        "direction": "column",
+        "first": {
+          "direction": "row",
+          "first": "Plot!luka0",
+          "second": "Plot!luka1",
+          "splitPercentage": 55
+        },
+        "second": {
+          "direction": "row",
+          "first": "RawMessages!luka2",
+          "second": "RawMessages!luka3",
+          "splitPercentage": 55
+        },
+        "splitPercentage": 78
+      },
+      "second": "LukaConsole!imu_axes",
+      "splitPercentage": 72
+    },
+    "globalVariables": {},
+    "userNodes": {},
+    "playbackConfig": {
+      "speed": 1
+    },
+    "version": 1
+  },
+  "04": {
+    "configById": {
+      "3D!luka0": {
+        "foxglovePanelTitle": "雷达三维扫描图",
+        "followTf": "base_link",
+        "followMode": "follow-pose",
+        "cameraState": {
+          "distance": 9,
+          "perspective": true,
+          "phi": 0.9,
+          "thetaOffset": 0.5,
+          "targetOffset": [
+            0,
+            0,
+            0
+          ]
+        },
+        "scene": {
+          "transforms": {
+            "showLabel": true,
+            "axisScale": 0.3,
+            "enablePreloading": true
+          }
+        },
+        "transforms": {},
+        "layers": {},
+        "version": 1,
+        "publish": {
+          "type": "pose",
+          "poseTopic": "/contract_demo/goal_pose",
+          "pointTopic": "/clicked_point",
+          "poseEstimateTopic": "/initialpose",
+          "poseEstimateXDeviation": 0.25,
+          "poseEstimateYDeviation": 0.25,
+          "poseEstimateThetaDeviation": 0.26
+        },
+        "topics": {
+          "/scan": {
+            "visible": true,
+            "color": "#38bdf8",
+            "pointSize": 3,
+            "decayTime": 0.5
+          },
+          "/scan_low_filtered": {
+            "visible": true,
+            "color": "#fb923c",
+            "pointSize": 3,
+            "decayTime": 0.5
+          },
+          "/scan_obstacle_fused": {
+            "visible": true,
+            "color": "#4ade80",
+            "pointSize": 3,
+            "decayTime": 0.5
+          },
+          "/contract_demo/scan_deskewed": {
+            "visible": true,
+            "color": "#f472b6",
+            "pointSize": 3,
+            "decayTime": 0.5
+          }
+        }
+      },
+      "RawMessages!luka1": {
+        "foxglovePanelTitle": "融合扫描",
+        "topicPath": "/scan_obstacle_fused",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "RawMessages!luka2": {
+        "foxglovePanelTitle": "去畸变输出",
+        "topicPath": "/contract_demo/scan_deskewed",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "LukaConsole!lidar": {
+        "caseNumber": "04",
+        "section": "navigation"
+      }
+    },
+    "layout": {
+      "direction": "row",
+      "first": {
+        "direction": "column",
+        "first": "3D!luka0",
+        "second": {
+          "direction": "row",
+          "first": "RawMessages!luka1",
+          "second": "RawMessages!luka2",
+          "splitPercentage": 55
+        },
+        "splitPercentage": 78
+      },
+      "second": "LukaConsole!lidar",
+      "splitPercentage": 72
+    },
+    "globalVariables": {},
+    "userNodes": {},
+    "playbackConfig": {
+      "speed": 1
+    },
+    "version": 1
+  },
+  "05": {
+    "configById": {
+      "Image!luka0": {
+        "foxglovePanelTitle": "RGB实景",
+        "imageMode": {
+          "imageTopic": "/camera/color/image_raw"
+        },
+        "scene": {},
+        "topics": {},
+        "transforms": {},
+        "layers": {},
+        "version": 1
+      },
+      "Image!luka1": {
+        "foxglovePanelTitle": "深度图",
+        "imageMode": {
+          "imageTopic": "/camera/depth/image_raw",
+          "colorMode": "colormap",
+          "colorMap": "turbo",
+          "minValue": 0,
+          "maxValue": 8000
+        },
+        "scene": {},
+        "topics": {},
+        "transforms": {},
+        "layers": {},
+        "version": 1
+      },
+      "RawMessages!luka2": {
+        "foxglovePanelTitle": "深度帧时间戳",
+        "topicPath": "/camera/depth/image_raw.header",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "LukaConsole!camera": {
+        "caseNumber": "05",
+        "section": "navigation"
+      }
+    },
+    "layout": {
+      "direction": "row",
+      "first": {
+        "direction": "column",
+        "first": {
+          "direction": "row",
+          "first": "Image!luka0",
+          "second": "Image!luka1",
+          "splitPercentage": 55
+        },
+        "second": "RawMessages!luka2",
+        "splitPercentage": 78
+      },
+      "second": "LukaConsole!camera",
+      "splitPercentage": 72
+    },
+    "globalVariables": {},
+    "userNodes": {},
+    "playbackConfig": {
+      "speed": 1
+    },
+    "version": 1
+  },
+  "06": {
+    "configById": {
+      "RawMessages!gui_status": {
+        "foxglovePanelTitle": "GUI启动与检查输出",
+        "topicPath": "/contract_demo/gui/status",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "LukaConsole!guide": {
+        "caseNumber": "06",
+        "initialView": "guide"
+      },
+      "SourceInfo!environment": {
+        "foxglovePanelTitle": "ROS连接与数据源"
+      }
+    },
+    "layout": {
+      "direction": "row",
+      "first": {
+        "direction": "column",
+        "first": "SourceInfo!environment",
+        "second": "RawMessages!gui_status",
+        "splitPercentage": 65
+      },
+      "second": "LukaConsole!guide",
+      "splitPercentage": 45
+    },
+    "globalVariables": {},
+    "userNodes": {},
+    "playbackConfig": {
+      "speed": 1
+    },
+    "version": 1
+  },
+  "07": {
+    "configById": {
+      "RawMessages!luka0": {
+        "foxglovePanelTitle": "标准Odometry",
+        "topicPath": "/wheel/odom",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "RawMessages!luka1": {
+        "foxglovePanelTitle": "标准IMU",
+        "topicPath": "/imu/data",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "RawMessages!luka2": {
+        "foxglovePanelTitle": "业务JSON消息",
+        "topicPath": "/hotel/mission/status",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "LukaConsole!interfaces": {
+        "caseNumber": "07",
+        "section": "navigation"
+      }
+    },
+    "layout": {
+      "direction": "row",
+      "first": {
+        "direction": "row",
+        "first": {
+          "direction": "column",
+          "first": "RawMessages!luka0",
+          "second": "RawMessages!luka1",
+          "splitPercentage": 55
+        },
+        "second": "RawMessages!luka2",
+        "splitPercentage": 55
+      },
+      "second": "LukaConsole!interfaces",
+      "splitPercentage": 72
+    },
+    "globalVariables": {},
+    "userNodes": {},
+    "playbackConfig": {
+      "speed": 1
+    },
+    "version": 1
+  },
+  "08": {
+    "configById": {
+      "3D!luka0": {
+        "foxglovePanelTitle": "实时地图·扫描·路径（无目标时等待）",
+        "followTf": "map",
+        "followMode": "follow-pose",
+        "cameraState": {
+          "distance": 6,
+          "perspective": false,
+          "phi": 0,
+          "thetaOffset": 0,
+          "targetOffset": [
+            0,
+            0,
+            0
+          ]
+        },
+        "scene": {
+          "transforms": {
+            "showLabel": true,
+            "axisScale": 0.3,
+            "enablePreloading": true
+          }
+        },
+        "transforms": {},
+        "layers": {},
+        "version": 1,
+        "publish": {
+          "type": "pose",
+          "poseTopic": "/contract_demo/goal_pose",
+          "pointTopic": "/clicked_point",
+          "poseEstimateTopic": "/initialpose",
+          "poseEstimateXDeviation": 0.25,
+          "poseEstimateYDeviation": 0.25,
+          "poseEstimateThetaDeviation": 0.26
+        },
+        "topics": {
+          "/map": {
+            "visible": true,
+            "color": "#38bdf8",
+            "pointSize": 3,
+            "decayTime": 0
+          },
+          "/scan": {
+            "visible": true,
+            "color": "#fb923c",
+            "pointSize": 3,
+            "decayTime": 0.5
+          },
+          "/scan_obstacle_fused": {
+            "visible": true,
+            "color": "#4ade80",
+            "pointSize": 3,
+            "decayTime": 0.5
+          },
+          "/plan": {
+            "visible": true,
+            "color": "#f472b6",
+            "pointSize": 3,
+            "decayTime": 0
+          },
+          "/patrol/route_path": {
+            "visible": true,
+            "color": "#38bdf8",
+            "pointSize": 3,
+            "decayTime": 0
+          },
+          "/rtabmap_rgbd/localization_pose": {
+            "visible": true,
+            "color": "#fb923c",
+            "pointSize": 3,
+            "decayTime": 0
+          }
+        }
+      },
+      "TopicGraph!luka1": {
+        "foxglovePanelTitle": "ROS节点与数据流"
+      },
+      "RawMessages!luka2": {
+        "foxglovePanelTitle": "底盘反馈",
+        "topicPath": "/wheel/odom",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "Image!luka3": {
+        "foxglovePanelTitle": "相机",
+        "imageMode": {
+          "imageTopic": "/camera/color/image_raw"
+        },
+        "scene": {},
+        "topics": {},
+        "transforms": {},
+        "layers": {},
+        "version": 1
+      },
+      "LukaConsole!layers": {
+        "caseNumber": "08",
+        "section": "navigation"
+      }
+    },
+    "layout": {
+      "direction": "row",
+      "first": {
+        "direction": "column",
+        "first": "3D!luka0",
+        "second": {
+          "direction": "row",
+          "first": {
+            "direction": "column",
+            "first": "TopicGraph!luka1",
+            "second": "RawMessages!luka2",
+            "splitPercentage": 55
+          },
+          "second": "Image!luka3",
+          "splitPercentage": 55
+        },
+        "splitPercentage": 78
+      },
+      "second": "LukaConsole!layers",
+      "splitPercentage": 72
+    },
+    "globalVariables": {},
+    "userNodes": {},
+    "playbackConfig": {
+      "speed": 1
+    },
+    "version": 1
+  },
+  "09": {
+    "configById": {
+      "3D!luka0": {
+        "foxglovePanelTitle": "实时地图·扫描·路径（无目标时等待）",
+        "followTf": "map",
+        "followMode": "follow-pose",
+        "cameraState": {
+          "distance": 6,
+          "perspective": false,
+          "phi": 0,
+          "thetaOffset": 0,
+          "targetOffset": [
+            0,
+            0,
+            0
+          ]
+        },
+        "scene": {
+          "transforms": {
+            "showLabel": true,
+            "axisScale": 0.3,
+            "enablePreloading": true
+          }
+        },
+        "transforms": {},
+        "layers": {},
+        "version": 1,
+        "publish": {
+          "type": "pose",
+          "poseTopic": "/contract_demo/goal_pose",
+          "pointTopic": "/clicked_point",
+          "poseEstimateTopic": "/initialpose",
+          "poseEstimateXDeviation": 0.25,
+          "poseEstimateYDeviation": 0.25,
+          "poseEstimateThetaDeviation": 0.26
+        },
+        "topics": {
+          "/map": {
+            "visible": true,
+            "color": "#38bdf8",
+            "pointSize": 3,
+            "decayTime": 0
+          },
+          "/scan": {
+            "visible": true,
+            "color": "#fb923c",
+            "pointSize": 3,
+            "decayTime": 0.5
+          },
+          "/wheel/odom": {
+            "visible": true,
+            "color": "#4ade80",
+            "pointSize": 3,
+            "decayTime": 0
+          }
+        }
+      },
+      "Plot!luka1": {
+        "foxglovePanelTitle": "编码器逆解位置 / m",
+        "paths": [
+          {
+            "value": "/wheel/odom.pose.pose.position.x",
+            "enabled": true,
+            "timestampMethod": "receiveTime",
+            "label": "x",
+            "color": "#38bdf8"
+          },
+          {
+            "value": "/wheel/odom.pose.pose.position.y",
+            "enabled": true,
+            "timestampMethod": "receiveTime",
+            "label": "y",
+            "color": "#fb923c"
+          }
+        ],
+        "showLegend": true,
+        "legendDisplay": "top",
+        "showPlotValuesInLegend": true,
+        "showXAxisLabels": true,
+        "showYAxisLabels": true,
+        "isSynced": true,
+        "xAxisVal": "timestamp",
+        "followingViewWidth": 30,
+        "sidebarDimension": 180
+      },
+      "RawMessages!luka2": {
+        "foxglovePanelTitle": "建图尺寸与分辨率",
+        "topicPath": "/map.info",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "RawMessages!luka3": {
+        "foxglovePanelTitle": "地图导出结果（请求接受不等于保存完成）",
+        "topicPath": "/contract_demo/map_status",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "LukaConsole!slam": {
+        "caseNumber": "09",
+        "section": "navigation"
+      }
+    },
+    "layout": {
+      "direction": "row",
+      "first": {
+        "direction": "column",
+        "first": "3D!luka0",
+        "second": {
+          "direction": "row",
+          "first": {
+            "direction": "column",
+            "first": "Plot!luka1",
+            "second": "RawMessages!luka2",
+            "splitPercentage": 55
+          },
+          "second": "RawMessages!luka3",
+          "splitPercentage": 55
+        },
+        "splitPercentage": 78
+      },
+      "second": "LukaConsole!slam",
+      "splitPercentage": 72
+    },
+    "globalVariables": {},
+    "userNodes": {},
+    "playbackConfig": {
+      "speed": 1
+    },
+    "version": 1
+  },
+  "10": {
+    "configById": {
+      "3D!luka0": {
+        "foxglovePanelTitle": "实时地图·扫描·路径（无目标时等待）",
+        "followTf": "map",
+        "followMode": "follow-pose",
+        "cameraState": {
+          "distance": 6,
+          "perspective": false,
+          "phi": 0,
+          "thetaOffset": 0,
+          "targetOffset": [
+            0,
+            0,
+            0
+          ]
+        },
+        "scene": {
+          "transforms": {
+            "showLabel": true,
+            "axisScale": 0.3,
+            "enablePreloading": true
+          }
+        },
+        "transforms": {},
+        "layers": {},
+        "version": 1,
+        "publish": {
+          "type": "pose_estimate",
+          "poseTopic": "/contract_demo/goal_pose",
+          "pointTopic": "/clicked_point",
+          "poseEstimateTopic": "/initialpose",
+          "poseEstimateXDeviation": 0.25,
+          "poseEstimateYDeviation": 0.25,
+          "poseEstimateThetaDeviation": 0.26
+        },
+        "topics": {
+          "/map": {
+            "visible": true,
+            "color": "#38bdf8",
+            "pointSize": 3,
+            "decayTime": 0
+          },
+          "/scan": {
+            "visible": true,
+            "color": "#fb923c",
+            "pointSize": 3,
+            "decayTime": 0.5
+          },
+          "/scan_obstacle_fused": {
+            "visible": true,
+            "color": "#4ade80",
+            "pointSize": 3,
+            "decayTime": 0.5
+          },
+          "/plan": {
+            "visible": true,
+            "color": "#f472b6",
+            "pointSize": 3,
+            "decayTime": 0
+          },
+          "/patrol/route_path": {
+            "visible": true,
+            "color": "#38bdf8",
+            "pointSize": 3,
+            "decayTime": 0
+          },
+          "/rtabmap_rgbd/localization_pose": {
+            "visible": true,
+            "color": "#fb923c",
+            "pointSize": 3,
+            "decayTime": 0
+          }
+        }
+      },
+      "RawMessages!luka1": {
+        "foxglovePanelTitle": "静态地图信息",
+        "topicPath": "/map.info",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "RawMessages!luka2": {
+        "foxglovePanelTitle": "地图导出结果（请求接受不等于保存完成）",
+        "topicPath": "/contract_demo/map_status",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "LukaConsole!map": {
+        "caseNumber": "10",
+        "section": "navigation"
+      }
+    },
+    "layout": {
+      "direction": "row",
+      "first": {
+        "direction": "column",
+        "first": "3D!luka0",
+        "second": {
+          "direction": "row",
+          "first": "RawMessages!luka1",
+          "second": "RawMessages!luka2",
+          "splitPercentage": 55
+        },
+        "splitPercentage": 78
+      },
+      "second": "LukaConsole!map",
+      "splitPercentage": 72
+    },
+    "globalVariables": {},
+    "userNodes": {},
+    "playbackConfig": {
+      "speed": 1
+    },
+    "version": 1
+  },
+  "11": {
+    "configById": {
+      "3D!luka0": {
+        "foxglovePanelTitle": "实时地图·扫描·路径（无目标时等待）",
+        "followTf": "map",
+        "followMode": "follow-pose",
+        "cameraState": {
+          "distance": 6,
+          "perspective": false,
+          "phi": 0,
+          "thetaOffset": 0,
+          "targetOffset": [
+            0,
+            0,
+            0
+          ]
+        },
+        "scene": {
+          "transforms": {
+            "showLabel": true,
+            "axisScale": 0.3,
+            "enablePreloading": true
+          }
+        },
+        "transforms": {},
+        "layers": {},
+        "version": 1,
+        "publish": {
+          "type": "pose_estimate",
+          "poseTopic": "/contract_demo/goal_pose",
+          "pointTopic": "/clicked_point",
+          "poseEstimateTopic": "/initialpose",
+          "poseEstimateXDeviation": 0.25,
+          "poseEstimateYDeviation": 0.25,
+          "poseEstimateThetaDeviation": 0.26
+        },
+        "topics": {
+          "/map": {
+            "visible": true,
+            "color": "#38bdf8",
+            "pointSize": 3,
+            "decayTime": 0
+          },
+          "/scan": {
+            "visible": true,
+            "color": "#fb923c",
+            "pointSize": 3,
+            "decayTime": 0.5
+          },
+          "/scan_obstacle_fused": {
+            "visible": true,
+            "color": "#4ade80",
+            "pointSize": 3,
+            "decayTime": 0.5
+          },
+          "/plan": {
+            "visible": true,
+            "color": "#f472b6",
+            "pointSize": 3,
+            "decayTime": 0
+          },
+          "/patrol/route_path": {
+            "visible": true,
+            "color": "#38bdf8",
+            "pointSize": 3,
+            "decayTime": 0
+          },
+          "/rtabmap_rgbd/localization_pose": {
+            "visible": true,
+            "color": "#fb923c",
+            "pointSize": 3,
+            "decayTime": 0
+          }
+        }
+      },
+      "RawMessages!luka1": {
+        "foxglovePanelTitle": "RTAB-Map位姿与协方差",
+        "topicPath": "/rtabmap_rgbd/localization_pose",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "LukaConsole!localization": {
+        "caseNumber": "11",
+        "section": "navigation"
+      }
+    },
+    "layout": {
+      "direction": "row",
+      "first": {
+        "direction": "column",
+        "first": "3D!luka0",
+        "second": "RawMessages!luka1",
+        "splitPercentage": 78
+      },
+      "second": "LukaConsole!localization",
+      "splitPercentage": 72
+    },
+    "globalVariables": {},
+    "userNodes": {},
+    "playbackConfig": {
+      "speed": 1
+    },
+    "version": 1
+  },
+  "12": {
+    "configById": {
+      "3D!luka0": {
+        "foxglovePanelTitle": "实时地图·扫描·路径（无目标时等待）",
+        "followTf": "map",
+        "followMode": "follow-pose",
+        "cameraState": {
+          "distance": 6,
+          "perspective": false,
+          "phi": 0,
+          "thetaOffset": 0,
+          "targetOffset": [
+            0,
+            0,
+            0
+          ]
+        },
+        "scene": {
+          "transforms": {
+            "showLabel": true,
+            "axisScale": 0.3,
+            "enablePreloading": true
+          }
+        },
+        "transforms": {},
+        "layers": {},
+        "version": 1,
+        "publish": {
+          "type": "pose",
+          "poseTopic": "/contract_demo/goal_pose",
+          "pointTopic": "/clicked_point",
+          "poseEstimateTopic": "/initialpose",
+          "poseEstimateXDeviation": 0.25,
+          "poseEstimateYDeviation": 0.25,
+          "poseEstimateThetaDeviation": 0.26
+        },
+        "topics": {
+          "/map": {
+            "visible": true,
+            "color": "#38bdf8",
+            "pointSize": 3,
+            "decayTime": 0
+          },
+          "/scan": {
+            "visible": true,
+            "color": "#fb923c",
+            "pointSize": 3,
+            "decayTime": 0.5
+          },
+          "/scan_obstacle_fused": {
+            "visible": true,
+            "color": "#4ade80",
+            "pointSize": 3,
+            "decayTime": 0.5
+          },
+          "/plan": {
+            "visible": true,
+            "color": "#f472b6",
+            "pointSize": 3,
+            "decayTime": 0
+          },
+          "/patrol/route_path": {
+            "visible": true,
+            "color": "#38bdf8",
+            "pointSize": 3,
+            "decayTime": 0
+          },
+          "/rtabmap_rgbd/localization_pose": {
+            "visible": true,
+            "color": "#fb923c",
+            "pointSize": 3,
+            "decayTime": 0
+          }
+        }
+      },
+      "RawMessages!luka1": {
+        "foxglovePanelTitle": "规划路径",
+        "topicPath": "/plan",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "RawMessages!luka2": {
+        "foxglovePanelTitle": "原生导航请求与结果",
+        "topicPath": "/contract_demo/navigation_status",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "RawMessages!luka3": {
+        "foxglovePanelTitle": "现有底盘安全门",
+        "topicPath": "/nx/web_teleop_status",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "LukaConsole!navigation": {
+        "caseNumber": "12",
+        "section": "navigation"
+      }
+    },
+    "layout": {
+      "direction": "row",
+      "first": {
+        "direction": "column",
+        "first": "3D!luka0",
+        "second": {
+          "direction": "row",
+          "first": {
+            "direction": "column",
+            "first": "RawMessages!luka1",
+            "second": "RawMessages!luka2",
+            "splitPercentage": 55
+          },
+          "second": "RawMessages!luka3",
+          "splitPercentage": 55
+        },
+        "splitPercentage": 78
+      },
+      "second": "LukaConsole!navigation",
+      "splitPercentage": 72
+    },
+    "globalVariables": {},
+    "userNodes": {},
+    "playbackConfig": {
+      "speed": 1
+    },
+    "version": 1
+  },
+  "13": {
+    "configById": {
+      "3D!luka0": {
+        "foxglovePanelTitle": "实时地图·扫描·路径（无目标时等待）",
+        "followTf": "map",
+        "followMode": "follow-pose",
+        "cameraState": {
+          "distance": 6,
+          "perspective": false,
+          "phi": 0,
+          "thetaOffset": 0,
+          "targetOffset": [
+            0,
+            0,
+            0
+          ]
+        },
+        "scene": {
+          "transforms": {
+            "showLabel": true,
+            "axisScale": 0.3,
+            "enablePreloading": true
+          }
+        },
+        "transforms": {},
+        "layers": {},
+        "version": 1,
+        "publish": {
+          "type": "pose",
+          "poseTopic": "/contract_demo/goal_pose",
+          "pointTopic": "/clicked_point",
+          "poseEstimateTopic": "/initialpose",
+          "poseEstimateXDeviation": 0.25,
+          "poseEstimateYDeviation": 0.25,
+          "poseEstimateThetaDeviation": 0.26
+        },
+        "topics": {
+          "/map": {
+            "visible": true,
+            "color": "#38bdf8",
+            "pointSize": 3,
+            "decayTime": 0
+          },
+          "/scan": {
+            "visible": true,
+            "color": "#fb923c",
+            "pointSize": 3,
+            "decayTime": 0.5
+          },
+          "/scan_obstacle_fused": {
+            "visible": true,
+            "color": "#4ade80",
+            "pointSize": 3,
+            "decayTime": 0.5
+          },
+          "/plan": {
+            "visible": true,
+            "color": "#f472b6",
+            "pointSize": 3,
+            "decayTime": 0
+          },
+          "/patrol/route_path": {
+            "visible": true,
+            "color": "#38bdf8",
+            "pointSize": 3,
+            "decayTime": 0
+          },
+          "/rtabmap_rgbd/localization_pose": {
+            "visible": true,
+            "color": "#fb923c",
+            "pointSize": 3,
+            "decayTime": 0
+          }
+        }
+      },
+      "RawMessages!luka1": {
+        "foxglovePanelTitle": "碰撞监视器",
+        "topicPath": "/collision_monitor_state",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "RawMessages!luka2": {
+        "foxglovePanelTitle": "现有底盘安全门",
+        "topicPath": "/nx/web_teleop_status",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "RawMessages!luka3": {
+        "foxglovePanelTitle": "暂存目标与Nav2结果",
+        "topicPath": "/contract_demo/navigation_status",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "LukaConsole!avoidance": {
+        "caseNumber": "13",
+        "section": "navigation"
+      }
+    },
+    "layout": {
+      "direction": "row",
+      "first": {
+        "direction": "column",
+        "first": "3D!luka0",
+        "second": {
+          "direction": "row",
+          "first": {
+            "direction": "column",
+            "first": "RawMessages!luka1",
+            "second": "RawMessages!luka2",
+            "splitPercentage": 55
+          },
+          "second": "RawMessages!luka3",
+          "splitPercentage": 55
+        },
+        "splitPercentage": 78
+      },
+      "second": "LukaConsole!avoidance",
+      "splitPercentage": 72
+    },
+    "globalVariables": {},
+    "userNodes": {},
+    "playbackConfig": {
+      "speed": 1
+    },
+    "version": 1
+  },
+  "14": {
+    "configById": {
+      "3D!luka0": {
+        "foxglovePanelTitle": "实时地图·扫描·路径（无目标时等待）",
+        "followTf": "map",
+        "followMode": "follow-pose",
+        "cameraState": {
+          "distance": 6,
+          "perspective": false,
+          "phi": 0,
+          "thetaOffset": 0,
+          "targetOffset": [
+            0,
+            0,
+            0
+          ]
+        },
+        "scene": {
+          "transforms": {
+            "showLabel": true,
+            "axisScale": 0.3,
+            "enablePreloading": true
+          }
+        },
+        "transforms": {},
+        "layers": {},
+        "version": 1,
+        "publish": {
+          "type": "pose",
+          "poseTopic": "/contract_demo/goal_pose",
+          "pointTopic": "/clicked_point",
+          "poseEstimateTopic": "/initialpose",
+          "poseEstimateXDeviation": 0.25,
+          "poseEstimateYDeviation": 0.25,
+          "poseEstimateThetaDeviation": 0.26
+        },
+        "topics": {
+          "/map": {
+            "visible": true,
+            "color": "#38bdf8",
+            "pointSize": 3,
+            "decayTime": 0
+          },
+          "/scan": {
+            "visible": true,
+            "color": "#fb923c",
+            "pointSize": 3,
+            "decayTime": 0.5
+          },
+          "/scan_obstacle_fused": {
+            "visible": true,
+            "color": "#4ade80",
+            "pointSize": 3,
+            "decayTime": 0.5
+          },
+          "/plan": {
+            "visible": true,
+            "color": "#f472b6",
+            "pointSize": 3,
+            "decayTime": 0
+          },
+          "/patrol/route_path": {
+            "visible": true,
+            "color": "#38bdf8",
+            "pointSize": 3,
+            "decayTime": 0
+          },
+          "/rtabmap_rgbd/localization_pose": {
+            "visible": true,
+            "color": "#fb923c",
+            "pointSize": 3,
+            "decayTime": 0
+          }
+        }
+      },
+      "RawMessages!luka1": {
+        "foxglovePanelTitle": "巡航状态",
+        "topicPath": "/patrol/status",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "RawMessages!luka2": {
+        "foxglovePanelTitle": "软件Home状态",
+        "topicPath": "/home/status",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "RawMessages!luka3": {
+        "foxglovePanelTitle": "暂存目标与Nav2结果",
+        "topicPath": "/contract_demo/navigation_status",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "LukaConsole!business": {
+        "caseNumber": "14",
+        "section": "patrol"
+      }
+    },
+    "layout": {
+      "direction": "row",
+      "first": {
+        "direction": "column",
+        "first": "3D!luka0",
+        "second": {
+          "direction": "row",
+          "first": {
+            "direction": "column",
+            "first": "RawMessages!luka1",
+            "second": "RawMessages!luka2",
+            "splitPercentage": 55
+          },
+          "second": "RawMessages!luka3",
+          "splitPercentage": 55
+        },
+        "splitPercentage": 78
+      },
+      "second": "LukaConsole!business",
+      "splitPercentage": 72
+    },
+    "globalVariables": {},
+    "userNodes": {},
+    "playbackConfig": {
+      "speed": 1
+    },
+    "version": 1
+  },
+  "15": {
+    "configById": {
+      "Plot!luka0": {
+        "foxglovePanelTitle": "导航速度链 / m/s",
+        "paths": [
+          {
+            "value": "/nx/nav_raw.linear.x",
+            "enabled": true,
+            "timestampMethod": "receiveTime",
+            "label": "raw",
+            "color": "#38bdf8"
+          },
+          {
+            "value": "/nx/nav_smoothed.linear.x",
+            "enabled": true,
+            "timestampMethod": "receiveTime",
+            "label": "smoothed",
+            "color": "#fb923c"
+          },
+          {
+            "value": "/nx/nav_guarded.linear.x",
+            "enabled": true,
+            "timestampMethod": "receiveTime",
+            "label": "guarded",
+            "color": "#4ade80"
+          },
+          {
+            "value": "/nx/nav_safe.linear.x",
+            "enabled": true,
+            "timestampMethod": "receiveTime",
+            "label": "safe",
+            "color": "#f472b6"
+          }
+        ],
+        "showLegend": true,
+        "legendDisplay": "top",
+        "showPlotValuesInLegend": true,
+        "showXAxisLabels": true,
+        "showYAxisLabels": true,
+        "isSynced": true,
+        "xAxisVal": "timestamp",
+        "followingViewWidth": 30,
+        "sidebarDimension": 180
+      },
+      "RawMessages!luka1": {
+        "foxglovePanelTitle": "现有底盘安全门",
+        "topicPath": "/nx/web_teleop_status",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "RawMessages!luka2": {
+        "foxglovePanelTitle": "暂存目标与Nav2结果",
+        "topicPath": "/contract_demo/navigation_status",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "LukaConsole!smoothing": {
+        "caseNumber": "15",
+        "section": "navigation"
+      }
+    },
+    "layout": {
+      "direction": "row",
+      "first": {
+        "direction": "row",
+        "first": {
+          "direction": "column",
+          "first": "Plot!luka0",
+          "second": "RawMessages!luka1",
+          "splitPercentage": 55
+        },
+        "second": "RawMessages!luka2",
+        "splitPercentage": 55
+      },
+      "second": "LukaConsole!smoothing",
+      "splitPercentage": 72
+    },
+    "globalVariables": {},
+    "userNodes": {},
+    "playbackConfig": {
+      "speed": 1
+    },
+    "version": 1
+  },
+  "16": {
+    "configById": {
+      "RawMessages!gui_status": {
+        "foxglovePanelTitle": "GUI启动与检查输出",
+        "topicPath": "/contract_demo/gui/status",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "LukaConsole!guide": {
+        "caseNumber": "16",
+        "initialView": "guide"
+      }
+    },
+    "layout": {
+      "direction": "row",
+      "first": "RawMessages!gui_status",
+      "second": "LukaConsole!guide",
+      "splitPercentage": 45
+    },
+    "globalVariables": {},
+    "userNodes": {},
+    "playbackConfig": {
+      "speed": 1
+    },
+    "version": 1
+  },
+  "17": {
+    "configById": {
+      "3D!luka0": {
+        "foxglovePanelTitle": "实时地图·扫描·路径（无目标时等待）",
+        "followTf": "map",
+        "followMode": "follow-pose",
+        "cameraState": {
+          "distance": 6,
+          "perspective": false,
+          "phi": 0,
+          "thetaOffset": 0,
+          "targetOffset": [
+            0,
+            0,
+            0
+          ]
+        },
+        "scene": {
+          "transforms": {
+            "showLabel": true,
+            "axisScale": 0.3,
+            "enablePreloading": true
+          }
+        },
+        "transforms": {},
+        "layers": {},
+        "version": 1,
+        "publish": {
+          "type": "pose",
+          "poseTopic": "/contract_demo/goal_pose",
+          "pointTopic": "/clicked_point",
+          "poseEstimateTopic": "/initialpose",
+          "poseEstimateXDeviation": 0.25,
+          "poseEstimateYDeviation": 0.25,
+          "poseEstimateThetaDeviation": 0.26
+        },
+        "topics": {
+          "/map": {
+            "visible": true,
+            "color": "#38bdf8",
+            "pointSize": 3,
+            "decayTime": 0
+          },
+          "/scan": {
+            "visible": true,
+            "color": "#fb923c",
+            "pointSize": 3,
+            "decayTime": 0.5
+          },
+          "/scan_obstacle_fused": {
+            "visible": true,
+            "color": "#4ade80",
+            "pointSize": 3,
+            "decayTime": 0.5
+          },
+          "/plan": {
+            "visible": true,
+            "color": "#f472b6",
+            "pointSize": 3,
+            "decayTime": 0
+          },
+          "/patrol/route_path": {
+            "visible": true,
+            "color": "#38bdf8",
+            "pointSize": 3,
+            "decayTime": 0
+          },
+          "/rtabmap_rgbd/localization_pose": {
+            "visible": true,
+            "color": "#fb923c",
+            "pointSize": 3,
+            "decayTime": 0
+          }
+        }
+      },
+      "RawMessages!luka1": {
+        "foxglovePanelTitle": "仅软件返航，不等于充电",
+        "topicPath": "/home/status",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "RawMessages!luka2": {
+        "foxglovePanelTitle": "暂存目标与Nav2结果",
+        "topicPath": "/contract_demo/navigation_status",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "LukaConsole!home": {
+        "caseNumber": "17",
+        "section": "patrol"
+      }
+    },
+    "layout": {
+      "direction": "row",
+      "first": {
+        "direction": "column",
+        "first": "3D!luka0",
+        "second": {
+          "direction": "row",
+          "first": "RawMessages!luka1",
+          "second": "RawMessages!luka2",
+          "splitPercentage": 55
+        },
+        "splitPercentage": 78
+      },
+      "second": "LukaConsole!home",
+      "splitPercentage": 72
+    },
+    "globalVariables": {},
+    "userNodes": {},
+    "playbackConfig": {
+      "speed": 1
+    },
+    "version": 1
+  },
+  "18": {
+    "configById": {
+      "RawMessages!gui_status": {
+        "foxglovePanelTitle": "GUI启动与检查输出",
+        "topicPath": "/contract_demo/gui/status",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "LukaConsole!guide": {
+        "caseNumber": "18",
+        "initialView": "guide"
+      }
+    },
+    "layout": {
+      "direction": "row",
+      "first": "RawMessages!gui_status",
+      "second": "LukaConsole!guide",
+      "splitPercentage": 45
+    },
+    "globalVariables": {},
+    "userNodes": {},
+    "playbackConfig": {
+      "speed": 1
+    },
+    "version": 1
+  },
+  "19": {
+    "configById": {
+      "RawMessages!gui_status": {
+        "foxglovePanelTitle": "GUI启动与检查输出",
+        "topicPath": "/contract_demo/gui/status",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "LukaConsole!guide": {
+        "caseNumber": "19",
+        "initialView": "guide"
+      }
+    },
+    "layout": {
+      "direction": "row",
+      "first": "RawMessages!gui_status",
+      "second": "LukaConsole!guide",
+      "splitPercentage": 45
+    },
+    "globalVariables": {},
+    "userNodes": {},
+    "playbackConfig": {
+      "speed": 1
+    },
+    "version": 1
+  },
+  "20": {
+    "configById": {
+      "RawMessages!luka0": {
+        "foxglovePanelTitle": "DOA事件：核对源时间戳",
+        "topicPath": "/voice/doa",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "RawMessages!luka1": {
+        "foxglovePanelTitle": "语音识别文本",
+        "topicPath": "/voice/recognized_text",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "RawMessages!luka2": {
+        "foxglovePanelTitle": "语音状态",
+        "topicPath": "/voice/status",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "RawMessages!luka3": {
+        "foxglovePanelTitle": "命令Agent反馈",
+        "topicPath": "/llm_status",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "LukaConsole!voice": {
+        "caseNumber": "20",
+        "section": "voice"
+      }
+    },
+    "layout": {
+      "direction": "row",
+      "first": {
+        "direction": "row",
+        "first": {
+          "direction": "column",
+          "first": "RawMessages!luka0",
+          "second": "RawMessages!luka1",
+          "splitPercentage": 55
+        },
+        "second": {
+          "direction": "column",
+          "first": "RawMessages!luka2",
+          "second": "RawMessages!luka3",
+          "splitPercentage": 55
+        },
+        "splitPercentage": 55
+      },
+      "second": "LukaConsole!voice",
+      "splitPercentage": 72
+    },
+    "globalVariables": {},
+    "userNodes": {},
+    "playbackConfig": {
+      "speed": 1
+    },
+    "version": 1
+  },
+  "21": {
+    "configById": {
+      "RawMessages!gui_status": {
+        "foxglovePanelTitle": "GUI启动与检查输出",
+        "topicPath": "/contract_demo/gui/status",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "LukaConsole!guide": {
+        "caseNumber": "21",
+        "initialView": "guide"
+      }
+    },
+    "layout": {
+      "direction": "row",
+      "first": "RawMessages!gui_status",
+      "second": "LukaConsole!guide",
+      "splitPercentage": 45
+    },
+    "globalVariables": {},
+    "userNodes": {},
+    "playbackConfig": {
+      "speed": 1
+    },
+    "version": 1
+  },
+  "22": {
+    "configById": {
+      "Image!luka0": {
+        "foxglovePanelTitle": "YuNet/SFace：参考相似度，无权限联动",
+        "imageMode": {
+          "imageTopic": "/contract_demo/face_image"
+        },
+        "scene": {},
+        "topics": {},
+        "transforms": {},
+        "layers": {},
+        "version": 1
+      },
+      "RawMessages!luka1": {
+        "foxglovePanelTitle": "图像时间戳",
+        "topicPath": "/contract_demo/face_image.header",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "LukaConsole!face": {
+        "caseNumber": "22",
+        "section": "people"
+      }
+    },
+    "layout": {
+      "direction": "row",
+      "first": {
+        "direction": "column",
+        "first": "Image!luka0",
+        "second": "RawMessages!luka1",
+        "splitPercentage": 78
+      },
+      "second": "LukaConsole!face",
+      "splitPercentage": 72
+    },
+    "globalVariables": {},
+    "userNodes": {},
+    "playbackConfig": {
+      "speed": 1
+    },
+    "version": 1
+  },
+  "23": {
+    "configById": {
+      "RawMessages!gui_status": {
+        "foxglovePanelTitle": "GUI启动与检查输出",
+        "topicPath": "/contract_demo/gui/status",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "LukaConsole!guide": {
+        "caseNumber": "23",
+        "initialView": "guide"
+      }
+    },
+    "layout": {
+      "direction": "row",
+      "first": "RawMessages!gui_status",
+      "second": "LukaConsole!guide",
+      "splitPercentage": 45
+    },
+    "globalVariables": {},
+    "userNodes": {},
+    "playbackConfig": {
+      "speed": 1
+    },
+    "version": 1
+  },
+  "24": {
+    "configById": {
+      "RawMessages!luka0": {
+        "foxglovePanelTitle": "任务状态",
+        "topicPath": "/hotel/mission/status",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "RawMessages!luka1": {
+        "foxglovePanelTitle": "安全状态",
+        "topicPath": "/hotel/mission/safety_status",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "RawMessages!luka2": {
+        "foxglovePanelTitle": "目标状态",
+        "topicPath": "/hotel/mission/goal_status",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "RawMessages!luka3": {
+        "foxglovePanelTitle": "暂存目标与Nav2结果",
+        "topicPath": "/contract_demo/navigation_status",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "LukaConsole!state_machine": {
+        "caseNumber": "24",
+        "section": "patrol"
+      }
+    },
+    "layout": {
+      "direction": "row",
+      "first": {
+        "direction": "row",
+        "first": {
+          "direction": "column",
+          "first": "RawMessages!luka0",
+          "second": "RawMessages!luka1",
+          "splitPercentage": 55
+        },
+        "second": {
+          "direction": "column",
+          "first": "RawMessages!luka2",
+          "second": "RawMessages!luka3",
+          "splitPercentage": 55
+        },
+        "splitPercentage": 55
+      },
+      "second": "LukaConsole!state_machine",
+      "splitPercentage": 72
+    },
+    "globalVariables": {},
+    "userNodes": {},
+    "playbackConfig": {
+      "speed": 1
+    },
+    "version": 1
+  },
+  "25": {
+    "configById": {
+      "RawMessages!luka0": {
+        "foxglovePanelTitle": "现有底盘安全门",
+        "topicPath": "/nx/web_teleop_status",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "RawMessages!luka1": {
+        "foxglovePanelTitle": "任务安全状态",
+        "topicPath": "/hotel/mission/safety_status",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "RawMessages!luka2": {
+        "foxglovePanelTitle": "语音设备状态",
+        "topicPath": "/voice/status",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "LukaConsole!diagnostics": {
+        "caseNumber": "25",
+        "section": "system"
+      }
+    },
+    "layout": {
+      "direction": "row",
+      "first": {
+        "direction": "row",
+        "first": {
+          "direction": "column",
+          "first": "RawMessages!luka0",
+          "second": "RawMessages!luka1",
+          "splitPercentage": 55
+        },
+        "second": "RawMessages!luka2",
+        "splitPercentage": 55
+      },
+      "second": "LukaConsole!diagnostics",
+      "splitPercentage": 72
+    },
+    "globalVariables": {},
+    "userNodes": {},
+    "playbackConfig": {
+      "speed": 1
+    },
+    "version": 1
+  },
+  "26": {
+    "configById": {
+      "RawMessages!gui_status": {
+        "foxglovePanelTitle": "GUI启动与检查输出",
+        "topicPath": "/contract_demo/gui/status",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "LukaConsole!guide": {
+        "caseNumber": "26",
+        "initialView": "guide"
+      }
+    },
+    "layout": {
+      "direction": "row",
+      "first": "RawMessages!gui_status",
+      "second": "LukaConsole!guide",
+      "splitPercentage": 45
+    },
+    "globalVariables": {},
+    "userNodes": {},
+    "playbackConfig": {
+      "speed": 1
+    },
+    "version": 1
+  },
+  "27": {
+    "configById": {
+      "RawMessages!gui_status": {
+        "foxglovePanelTitle": "GUI启动与检查输出",
+        "topicPath": "/contract_demo/gui/status",
+        "expansion": "all",
+        "diffEnabled": false,
+        "diffMethod": "previous message",
+        "diffTopicPath": "",
+        "showFullMessageForDiff": false,
+        "fontSize": 14
+      },
+      "LukaConsole!guide": {
+        "caseNumber": "27",
+        "initialView": "guide"
+      }
+    },
+    "layout": {
+      "direction": "row",
+      "first": "RawMessages!gui_status",
+      "second": "LukaConsole!guide",
+      "splitPercentage": 45
+    },
+    "globalVariables": {},
+    "userNodes": {},
+    "playbackConfig": {
+      "speed": 1
+    },
+    "version": 1
+  }
+}

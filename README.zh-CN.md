@@ -36,7 +36,7 @@ pwsh -ExecutionPolicy Bypass -File .\build-desktop-cn.ps1
 脚本会安装锁定的依赖、构建生产版 Web 前端，并生成 NSIS x64 安装器：
 
 ```text
-desktop-cn\dist\foxglove-studio-cn_1.86.0-cn.13_x64.exe
+desktop-cn\dist\foxglove-studio-cn_1.86.0-cn.14_x64.exe
 ```
 
 ## 从源码构建

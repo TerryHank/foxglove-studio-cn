@@ -19,7 +19,7 @@ from rclpy.action import ActionClient
 from rclpy.node import Node
 from geometry_msgs.msg import PoseStamped
 from nav2_msgs.action import NavigateToPose
-from std_msgs.msg import String
+from std_msgs.msg import String, Bool
 from std_srvs.srv import SetBool, Trigger
 
 def valid_pose(pose):
@@ -38,8 +38,14 @@ class NativeCommands(Node):
         fcntl.flock(self.lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         self.nav = ActionClient(self, NavigateToPose, "navigate_to_pose")
         self.gate = self.create_client(SetBool, "/nx/navigation_enable")
+        self.stack_save = self.create_client(Trigger, '/contract_demo/gui/stack/save')
+        self.stack_state={}
+        self.create_subscription(String,'/contract_demo/gui/status',self.on_stack,10)
         self.output = self.create_publisher(String, "/contract_demo/navigation_status", 10)
         self.map_output = self.create_publisher(String, "/contract_demo/map_status", 10)
+        self.verified = False
+        self.verified_at = 0.
+        self.create_subscription(Bool, "/localization/ready", self.on_verified, 10)
         self.create_subscription(PoseStamped, "/contract_demo/goal_pose", self.stage, 10)
         self.create_service(Trigger, "/contract_demo/send_goal", self.send)
         self.create_service(Trigger, "/contract_demo/cancel_goal", self.cancel)
@@ -58,6 +64,17 @@ class NativeCommands(Node):
     def update(self, state, **fields):
         self.state = dict(state=state, **fields)
 
+    def on_stack(self,message):
+        try:self.stack_state=json.loads(message.data)
+        except ValueError:self.stack_state={}
+        if self.stack_state.get('phase')=='switching':self.goal=None
+
+    def on_verified(self, message):
+        self.verified, self.verified_at = message.data, time.monotonic()
+
+    def localization_ready(self):
+        return self.verified and time.monotonic()-self.verified_at < .6
+
     def stage(self, pose):
         if not valid_pose(pose):
             self.goal = None
@@ -71,9 +88,14 @@ class NativeCommands(Node):
                     note="Not sent to Nav2; click execute within 30 seconds")
 
     def send(self, _request, response):
+        stack=getattr(self,'stack_state',{})
         response.success = False
-        if self.pending:
+        if stack.get('phase') in ('switching','stopping','starting') or stack.get('busy'):
+            response.message='导航技术栈正在切换；切换完成后重新画目标'
+        elif self.pending:
             response.message = "An active goal exists; cancel and confirm stopped first"
+        elif not self.localization_ready():
+            response.message = "Initial localization is not verified or its heartbeat expired"
         elif self.goal is None or time.monotonic() - self.goal_at > 30:
             response.message = "Draw a fresh map-frame goal in 3D first (30s expiry)"
         elif not self.nav.server_is_ready() or not self.gate.service_is_ready():
@@ -94,6 +116,9 @@ class NativeCommands(Node):
     def enabled(self, future, pose, generation):
         if generation != self.generation:
             self.disable()
+            return
+        if not self.localization_ready():
+            self.abort("Localization verification expired during gate check")
             return
         try:
             result = future.result()
@@ -163,12 +188,21 @@ class NativeCommands(Node):
         return response
 
     def tick(self):
+        if self.pending and not self.localization_ready():
+            self.abort("Localization verification lost; confirm measured stop")
         if self.pending and self.deadline and time.monotonic() > self.deadline:
             self.abort("Safety gate/action acknowledgement timeout")
         self.output.publish(String(data=json.dumps(self.state)))
         self.map_output.publish(String(data=json.dumps(self.map_state)))
 
     def save_map(self, _request, response):
+        if getattr(self,'stack_state',{}).get('navigation_stack')=='rtabmap':
+            if not self.stack_save.service_is_ready():
+                response.success,response.message=False,'视觉地图保存管理器不可用'
+            else:
+                self.stack_save.call_async(Trigger.Request())
+                response.success,response.message=True,'视觉地图保存已请求；导航会停止，查看GUI技术栈状态确认完成'
+            return response
         if self.map_busy:
             response.success, response.message = False, "Map export already running"
             return response

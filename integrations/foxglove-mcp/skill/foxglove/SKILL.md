@@ -22,7 +22,7 @@ description: "Operate the local Foxglove Studio CN desktop through MCP: inspect 
 
 ## 布局工作流
 
-读取当前布局和实际话题后再改配置。支持3D、Plot、Image、RawMessages及原生LukaConsole（ROS发布/服务按钮与本地验收步骤）；不插入用户脚本或Publish面板。LukaConsole原生方向/导航/返航按钮由操作者点击，不把创建布局视为模型执行运动的授权。需要新布局/具体字段配置时读 [references/layouts.md](references/layouts.md)。
+读取当前布局和实际话题后再改配置。支持3D、Plot、Image、RawMessages、TopicGraph、SourceInfo及原生LukaConsole（ROS发布/服务按钮与本地验收步骤）；不插入用户脚本或Publish面板。LukaConsole原生方向/导航/返航按钮由操作者点击，不把创建布局视为模型执行运动的授权。需要新布局/具体字段配置时读 [references/layouts.md](references/layouts.md)。
 
 修改后用get_layout读回，再检查get_status的订阅、消息计数和problems；最后截图观察实际画面。消息未到、话题缺失或字段不匹配时如实报告，不把空面板算演示通过。不要因为一条错误就重启机器人或切换运行服务。
 
@@ -57,3 +57,7 @@ Windows默认使用自带PowerShell 5.1；不假设pwsh已在PATH。启动器已
 每次工具调用从用户配置目录读取当前API令牌，不把令牌放入聊天、skill、MCP配置或Git。若客户端重启导致401，重新检查本机API，不要求用户购买官方席位。
 
 截图可直接作为MCP图像结果展示；需要存档时放在用户指定目录或本机应用数据目录，现场图像不自动上传仓库。报告时区分接口/静态验证、模拟数据、真实传感器显示及实车闭环验收。
+
+## GUI验收
+
+cn.15总布局位于integrations/luka-contract-demo/acceptance/Luka_合同验收_GUI.json。用户通过原生面板选择、开始、停止案例，勾选是否已验收并记录、导出记录；无须PowerShell或SSH终端。远端luka-contract-gui.service开机仅启动管理器，硬件需用户明确操作。机器人当前为sunrise@192.168.3.150，数据连接ws://192.168.3.150:8765。MCP仍不提供运动或GUI点击工具；不要因布局导入而自行发送速度／目标。

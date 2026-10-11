@@ -97,7 +97,7 @@ def list_demo_layouts() -> dict[str, Any]:
 def set_layout(name: str, data: dict[str, Any]) -> dict[str, Any]:
     """Replace the visual layout with standard layout JSON. The desktop backs up the previous layout.
 
-    3D, Plot, Image, RawMessages and the fixed LukaConsole are accepted. No user scripts
+    3D, Plot, Image, RawMessages, TopicGraph, SourceInfo and native LukaConsole are accepted. No user scripts
     or Publish panels. Robot operations inside LukaConsole require human interaction.
     """
     return api_request("POST", "/layout", {"name": name, "data": data})

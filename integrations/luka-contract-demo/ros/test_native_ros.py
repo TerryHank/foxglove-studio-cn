@@ -11,6 +11,7 @@ from rclpy.node import Node
 from geometry_msgs.msg import PoseStamped
 from nav2_msgs.action import NavigateToPose
 from std_srvs.srv import SetBool, Trigger
+from std_msgs.msg import Bool
 
 
 def test_staging_gate_and_action_roundtrip(tmp_path):
@@ -35,6 +36,8 @@ def test_staging_gate_and_action_roundtrip(tmp_path):
     executor = MultiThreadedExecutor(num_threads=2)
     executor.add_node(adapter); executor.add_node(fake)
     publisher = fake.create_publisher(PoseStamped, "/contract_demo/goal_pose", 10)
+    verification = fake.create_publisher(Bool, "/localization/ready", 10)
+    fake.create_timer(.2,lambda:verification.publish(Bool(data=True)))
     send = fake.create_client(Trigger, "/contract_demo/send_goal")
     def until(check):
         deadline = time.monotonic()+8
@@ -42,7 +45,7 @@ def test_staging_gate_and_action_roundtrip(tmp_path):
             executor.spin_once(timeout_sec=.05)
         assert check()
     try:
-        until(lambda: adapter.nav.server_is_ready() and adapter.gate.service_is_ready() and send.service_is_ready() and publisher.get_subscription_count()==1)
+        until(lambda: adapter.nav.server_is_ready() and adapter.gate.service_is_ready() and send.service_is_ready() and publisher.get_subscription_count()==1 and adapter.localization_ready())
         pose = PoseStamped(); pose.header.frame_id = "map"; pose.pose.orientation.w = 1.; pose.pose.position.x = .5
         publisher.publish(pose)
         until(lambda: adapter.state.get("state")=="staged")

@@ -26,7 +26,7 @@
       "layers": {},
       "version": 1,
       "publish": {
-        "type": "pose",
+        "type": "pose_estimate",
         "poseTopic": "/contract_demo/goal_pose",
         "pointTopic": "/clicked_point",
         "poseEstimateTopic": "/initialpose",
@@ -65,7 +65,7 @@
           "pointSize": 3,
           "decayTime": 0
         },
-        "/amcl_pose": {
+        "/rtabmap_rgbd/localization_pose": {
           "visible": true,
           "color": "#fb923c",
           "pointSize": 3,
@@ -74,8 +74,8 @@
       }
     },
     "RawMessages!luka1": {
-      "foxglovePanelTitle": "AMCL位姿与协方差",
-      "topicPath": "/amcl_pose",
+      "foxglovePanelTitle": "RTAB-Map位姿与协方差",
+      "topicPath": "/rtabmap_rgbd/localization_pose",
       "expansion": "all",
       "diffEnabled": false,
       "diffMethod": "previous message",
@@ -91,13 +91,13 @@
   "layout": {
     "direction": "row",
     "first": {
-      "direction": "row",
+      "direction": "column",
       "first": "3D!luka0",
       "second": "RawMessages!luka1",
-      "splitPercentage": 55
+      "splitPercentage": 78
     },
     "second": "LukaConsole!localization",
-    "splitPercentage": 52
+    "splitPercentage": 72
   },
   "globalVariables": {},
   "userNodes": {},

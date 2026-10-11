@@ -44,18 +44,18 @@
   "layout": {
     "direction": "row",
     "first": {
-      "direction": "row",
+      "direction": "column",
       "first": {
-        "direction": "column",
+        "direction": "row",
         "first": "Image!luka0",
         "second": "Image!luka1",
         "splitPercentage": 55
       },
       "second": "RawMessages!luka2",
-      "splitPercentage": 55
+      "splitPercentage": 78
     },
     "second": "LukaConsole!camera",
-    "splitPercentage": 52
+    "splitPercentage": 72
   },
   "globalVariables": {},
   "userNodes": {},

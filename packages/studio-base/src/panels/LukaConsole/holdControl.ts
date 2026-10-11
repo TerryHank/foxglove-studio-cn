@@ -23,6 +23,7 @@ export class HoldControl {
     private readonly publish: (message: Record<string, unknown>) => void,
     private readonly ready: () => boolean,
     private readonly clock: () => number = () => performance.now(),
+    private readonly maxHoldMs = 2000,
   ) {}
 
   start(direction: Direction): boolean {
@@ -33,8 +34,8 @@ export class HoldControl {
     this.startedAt = this.clock();
     this.publish(twist(direction));
     this.timer = setInterval(() => {
-      // A lost release event cannot cause indefinite driving.
-      if (!this.ready() || this.clock() - this.startedAt >= 2000) {
+      // Bounded callers keep a hold limit; all callers require fresh readiness.
+      if (!this.ready() || this.clock() - this.startedAt >= this.maxHoldMs) {
         this.stop();
       } else {
         this.publish(twist(direction));

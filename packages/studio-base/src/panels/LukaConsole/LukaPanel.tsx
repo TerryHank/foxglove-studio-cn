@@ -18,6 +18,11 @@ import { PanelExtensionContext } from "@foxglove/studio";
 import ThemeProvider from "@foxglove/studio-base/theme/ThemeProvider";
 import guide from "./guide.json";
 import { COMMAND_TOPIC, Direction, HoldControl } from "./holdControl";
+import PersonFollowPanel from "./PersonFollowPanel";
+import BusinessPanel from "./BusinessPanel";
+import ConversationPanel from "./ConversationPanel";
+import FleetPanel from "./FleetPanel";
+import ManualDrivePanel from "./ManualDrivePanel";
 
 const INPUTS = ["/nx/web_teleop_status", "/wheel/odom", "/scan", "/scan_low_filtered"];
 const STRINGS = ["/voice/tts_text", "/patrol/save_route", "/patrol/load_route"];
@@ -39,30 +44,123 @@ const DIRECTIONS: [Direction, string][] = [
   ["ccw", "↶ 左转"],
   ["cw", "↷ 右转"],
 ];
+type AcceptanceRecord = {
+  number: string;
+  title: string;
+  accepted: boolean;
+  at: string;
+};
+type Config = {
+  caseNumber?: string;
+  initialView?: string;
+  records?: Record<string, AcceptanceRecord & { conclusion?: string }>;
+};
+type LauncherStatus = {
+  phase: string;
+  case: string;
+  busy: boolean;
+  message: string;
+  log: string;
+  maps: string[];
+  manual_input_topic?: string;
+  selected_database?: string;
+};
+type LocalizationStatus = {
+  ready: boolean;
+  reason: string;
+  database_path: string;
+  mode: string;
+  backend: string;
+  samples: number;
+};
 
-export default function LukaPanel({ context }: { context: PanelExtensionContext }): JSX.Element {
-  const config = context.initialState as { caseNumber?: string; initialView?: string };
-  const [number, setNumber] = useState(config.caseNumber ?? "03");
+export default function LukaPanel(props: {
+  context: PanelExtensionContext;
+  selectCase: (number: string) => void;
+}): JSX.Element {
+  const initial = props.context.initialState as Config;
+  if (initial.initialView === "manual") {
+    return <ManualDrivePanel context={props.context} />;
+  }
+  if (initial.initialView === "fleet") {
+    return <FleetPanel context={props.context} />;
+  }
+  if (initial.initialView === "conversation") {
+    return <ConversationPanel context={props.context} />;
+  }
+  if (initial.initialView === "business") {
+    return <BusinessPanel context={props.context} />;
+  }
+  return initial.initialView === "follow" ? (
+    <PersonFollowPanel context={props.context} />
+  ) : (
+    <GeneralLukaPanel {...props} />
+  );
+}
+
+function GeneralLukaPanel({
+  context,
+  selectCase,
+}: {
+  context: PanelExtensionContext;
+  selectCase: (number: string) => void;
+}): JSX.Element {
+  const config = context.initialState as Config;
+  const [number] = useState(config.caseNumber ?? "01");
+  const directManual = number === "01" || number === "02";
+  const commandTopic = directManual ? "/cmd_vel" : COMMAND_TOPIC;
+  const requiredInputs = directManual ? INPUTS.slice(0, 2) : INPUTS;
   const [tab, setTab] = useState(config.initialView === "guide" ? "guide" : "controls");
   const [dark, setDark] = useState(false);
   const [armed, setArmed] = useState(false);
   const [ready, setReady] = useState(false);
   const [status, setStatus] = useState("等待底盘状态、编码器和双雷达");
+  const [lastBlocked, setLastBlocked] = useState("");
   const [result, setResult] = useState("按钮请求成功不等于任务完成；看左侧实测状态。");
   const [busy, setBusy] = useState(false);
   const [text, setText] = useState("你好，这是机器人语音演示。");
+  const [withEkf, setWithEkf] = useState(false);
+  const [databasePath, setDatabasePath] = useState("");
+  const [launcher, setLauncher] = useState<LauncherStatus>();
+  const [launcherOnline, setLauncherOnline] = useState(false);
+  const [localization, setLocalization] = useState<LocalizationStatus>();
+  const [localizationFresh, setLocalizationFresh] = useState(false);
+  const localizationAt = useRef(-Infinity);
+  const localizationRef = useRef<LocalizationStatus>();
+  const launcherRef = useRef<LauncherStatus>();
+  const launcherAt = useRef(-Infinity);
+  const [records, setRecords] = useState<Record<string, AcceptanceRecord>>(() =>
+    Object.fromEntries(
+      Object.entries(config.records ?? {}).map(([key, record]) => [
+        key,
+        {
+          number: record.number ?? key,
+          title: record.title,
+          accepted: record.accepted ?? record.conclusion === "通过",
+          at: record.at,
+        },
+      ]),
+    ),
+  );
+  const [accepted, setAccepted] = useState(records[number]?.accepted ?? false);
   const [renderDone, setRenderDone] = useState<() => void>(() => () => {});
   const samples = useRef(new Map<string, number>());
   const gate = useRef("");
   const armRef = useRef(false);
   const fresh = () =>
-    INPUTS.every((topic) => performance.now() - (samples.current.get(topic) ?? -Infinity) < 600) &&
+    performance.now() - launcherAt.current < 2000 &&
+    launcherRef.current?.phase === "running" &&
+    launcherRef.current.case === number &&
+    (!directManual || launcherRef.current.manual_input_topic === "/cmd_vel") &&
+    requiredInputs.every(
+      (topic) => performance.now() - (samples.current.get(topic) ?? -Infinity) < 600,
+    ) &&
     !/暂停|过期|障碍/.test(gate.current);
   const controlRef = useRef<HoldControl>();
   useLayoutEffect(() => {
     const publish = (message: Record<string, unknown>) => {
       try {
-        context.publish?.(COMMAND_TOPIC, message);
+        context.publish?.(commandTopic, message);
       } catch (error) {
         armRef.current = false;
         setArmed(false);
@@ -74,7 +172,7 @@ export default function LukaPanel({ context }: { context: PanelExtensionContext 
       () => armRef.current && fresh() && context.publish != undefined,
     );
     controlRef.current = control;
-    context.advertise?.(COMMAND_TOPIC, "geometry_msgs/Twist", {
+    context.advertise?.(commandTopic, "geometry_msgs/Twist", {
       datatypes: new Map([
         ["geometry_msgs/Vector3", ros1["geometry_msgs/Vector3"]],
         ["geometry_msgs/Twist", ros1["geometry_msgs/Twist"]],
@@ -90,17 +188,53 @@ export default function LukaPanel({ context }: { context: PanelExtensionContext 
         datatypes: new Map([["std_msgs/Empty", ros1["std_msgs/Empty"]]]),
       });
     }
-    context.subscribe(INPUTS.map((topic) => ({ topic })));
+    context.subscribe(
+      [...requiredInputs, "/contract_demo/gui/status", "/localization/initial_status"].map(
+        (topic) => ({ topic }),
+      ),
+    );
     context.watch("currentFrame");
     context.watch("colorScheme");
     context.onRender = (state, done) => {
       setRenderDone(() => done);
       setDark(state.colorScheme === "dark");
       for (const event of state.currentFrame ?? []) {
+        if (event.topic === "/localization/initial_status") {
+          try {
+            const info = JSON.parse((event.message as { data: string }).data) as LocalizationStatus;
+            if (typeof info.ready === "boolean") {
+              setLocalization(info);
+              localizationAt.current = performance.now();
+              localizationRef.current = info;
+            } else {
+              localizationAt.current = -Infinity;
+            }
+          } catch {
+            localizationAt.current = -Infinity;
+          }
+        }
+        if (event.topic === "/contract_demo/gui/status") {
+          try {
+            const next = JSON.parse((event.message as { data: string }).data) as LauncherStatus;
+            if (typeof next.phase === "string" && Array.isArray(next.maps)) {
+              launcherRef.current = next;
+              launcherAt.current = performance.now();
+              setLauncher(next);
+              setDatabasePath((current) => current || next.selected_database || "");
+            }
+          } catch {
+            /* Malformed status never permits motion. */
+          }
+        }
         samples.current.set(event.topic, performance.now());
         if (event.topic === INPUTS[0]) {
           gate.current = String((event.message as { data?: string }).data ?? "");
           setStatus(gate.current);
+          if (/障碍/.test(gate.current)) {
+            setLastBlocked(gate.current);
+          } else if (gate.current === "行驶中") {
+            setLastBlocked("");
+          }
         }
       }
     };
@@ -120,6 +254,8 @@ export default function LukaPanel({ context }: { context: PanelExtensionContext 
     window.addEventListener("pointercancel", stop);
     document.addEventListener("visibilitychange", hidden);
     const timer = setInterval(() => {
+      setLauncherOnline(performance.now() - launcherAt.current < 2000);
+      setLocalizationFresh(performance.now() - localizationAt.current < 1000);
       const next = fresh();
       setReady(next);
       if (!next) {
@@ -135,7 +271,7 @@ export default function LukaPanel({ context }: { context: PanelExtensionContext 
       document.removeEventListener("visibilitychange", hidden);
       context.onRender = undefined;
       context.unsubscribeAll();
-      for (const topic of [COMMAND_TOPIC, ...STRINGS, ...EMPTY]) {
+      for (const topic of [commandTopic, ...STRINGS, ...EMPTY]) {
         context.unadvertise?.(topic);
       }
     };
@@ -145,6 +281,24 @@ export default function LukaPanel({ context }: { context: PanelExtensionContext 
   }, [renderDone]);
   const item = guide.find((row) => row.number === number) ?? guide[0]!;
   async function service(name: string, request: Record<string, unknown> = {}) {
+    if (
+      (name === "/contract_demo/send_goal" ||
+        (name === "/nx/navigation_enable" && request.data === true)) &&
+      !(
+        performance.now() - launcherAt.current < 2000 &&
+        launcherRef.current?.phase === "running" &&
+        launcherRef.current.case === number
+      )
+    ) {
+      throw new Error("先开始当前案例，等待GUI状态新鲜且正在运行");
+    }
+    if (
+      (name === "/contract_demo/send_goal" ||
+        (name === "/nx/navigation_enable" && request.data === true)) &&
+      !(performance.now() - localizationAt.current < 1000 && localizationRef.current?.ready)
+    ) {
+      throw new Error("已有地图初始定位尚未验证；请先设置初始位姿并等待定位验证通过");
+    }
     if (!context.callService) {
       throw new Error("数据源不支持 ROS 服务调用");
     }
@@ -177,7 +331,7 @@ export default function LukaPanel({ context }: { context: PanelExtensionContext 
     context.publish(topic, data == undefined ? {} : { data });
     return { message: "请求已发送；查看任务反馈和实测里程计" };
   }
-  function button(label: string, action: () => Promise<unknown>) {
+  function button(label: string, action: () => Promise<unknown>, disabled = false) {
     const stop = [
       "暂停底盘",
       "取消导航",
@@ -186,24 +340,25 @@ export default function LukaPanel({ context }: { context: PanelExtensionContext 
       "停止巡航",
       "暂停任务",
       "取消任务",
+      "停止案例",
     ].includes(label);
     return (
       <Button
         key={label}
         variant="outlined"
-        disabled={busy && !stop}
+        disabled={disabled || (busy && !stop)}
         onClick={() => void run(action)}
       >
         {label}
       </Button>
     );
   }
-  const motionCases = ["11", "12", "13", "14", "15", "17", "24"];
+  const motionCases = ["12", "13", "14", "15", "17", "24"];
   return (
     <ThemeProvider isDark={dark}>
       <Stack spacing={1.5} sx={{ height: "100%", overflow: "auto", p: 1.5 }}>
         <Typography variant="h6">Luka 原生操作与验收</Typography>
-        <Stack direction="row" spacing={1}>
+        <Stack direction="row" flexWrap="wrap" gap={1}>
           <Button onClick={() => setTab("controls")}>原生控制</Button>
           <Button
             onClick={() => {
@@ -215,11 +370,12 @@ export default function LukaPanel({ context }: { context: PanelExtensionContext 
           </Button>
           <Select
             size="small"
+            sx={{ minWidth: 180, maxWidth: "100%", flex: "1 1 200px" }}
             value={number}
             onChange={(event) => {
               controlRef.current?.stop();
-              setNumber(event.target.value);
-              context.saveState({ caseNumber: event.target.value });
+              armRef.current = false;
+              selectCase(event.target.value);
             }}
           >
             {guide.map((row) => (
@@ -229,6 +385,152 @@ export default function LukaPanel({ context }: { context: PanelExtensionContext 
             ))}
           </Select>
         </Stack>
+        <Typography variant="subtitle2">原合同描述（{item.clause}）</Typography>
+        <Typography
+          data-testid="contract-requirement"
+          sx={{ whiteSpace: "pre-wrap", maxHeight: 160, overflow: "auto", flexShrink: 0 }}
+        >
+          {item.requirement}
+        </Typography>
+        <Alert
+          severity={!launcherOnline ? "warning" : launcher?.phase === "error" ? "error" : "info"}
+        >
+          {launcherOnline
+            ? `运行案例：${launcher?.case || "无"} · ${launcher?.phase} · ${launcher?.message}`
+            : "连接机器人后等待GUI管理器；没有新鲜状态时不可启动"}
+        </Alert>
+        <Typography variant="subtitle2">
+          地图模式：
+          {launcher?.case === "09"
+            ? "持续建图"
+            : ["10", "11"].includes(launcher?.case ?? "")
+            ? "已有地图定位"
+            : "以当前运行地图为准"}
+        </Typography>
+        <Stack direction="row" flexWrap="wrap" gap={1}>
+          <Button
+            variant={number === "09" ? "contained" : "outlined"}
+            onClick={() => {
+              controlRef.current?.stop();
+              armRef.current = false;
+              selectCase("09");
+            }}
+          >
+            持续建图（09）
+          </Button>
+          <Button
+            variant={["10", "11"].includes(number) ? "contained" : "outlined"}
+            onClick={() => {
+              controlRef.current?.stop();
+              armRef.current = false;
+              selectCase("10");
+            }}
+          >
+            已有地图定位（10）
+          </Button>
+        </Stack>
+        <Typography variant="caption">
+          切换运行模式：先停止当前案例并等待确认，再选模式、开始案例。已有地图定位可从下方地图列表选择文件，并在3D中设置初始位姿。
+        </Typography>
+        {["08", "09", "10", "11", "20", ...motionCases].includes(number) && (
+          <>
+            <Alert severity={localizationFresh && localization?.ready ? "success" : "warning"}>
+              {localizationFresh && localization?.ready
+                ? "RTAB-Map初始定位已验证"
+                : "RTAB-Map定位尚未验证，导航许可关闭"}
+              {localizationFresh && (
+                <Typography variant="caption" display="block">
+                  {localization?.reason}
+                </Typography>
+              )}
+            </Alert>
+            <Typography variant="caption">
+              在 3D 右侧发布工具中选择“位姿估计”，在当前地图上从车的位置拖向车头方向。
+              等待“RTAB-Map初始定位已验证”后再开始导航。重设位姿会立即撤销导航许可。
+            </Typography>
+            {button("复核初始定位", () => service("/localization/validate_initial"))}
+          </>
+        )}
+        {number === "03" && (
+          <FormControlLabel
+            label="融合EKF（自动准备轮里程计）"
+            control={<Checkbox checked={withEkf} onChange={(_e, checked) => setWithEkf(checked)} />}
+          />
+        )}
+        {["10", "11"].includes(number) && (
+          <Select
+            size="small"
+            value={databasePath}
+            onChange={(event) => setDatabasePath(event.target.value)}
+          >
+            <MenuItem value="">请选择已保存的 RTAB-Map .db 数据库</MenuItem>
+            {Array.from(new Set([databasePath, ...(launcher?.maps ?? [])]))
+              .filter(Boolean)
+              .map((path) => (
+                <MenuItem key={path} value={path}>
+                  {path}
+                </MenuItem>
+              ))}
+          </Select>
+        )}
+        <Stack direction="row" gap={1}>
+          {button(
+            "开始案例",
+            async () => {
+              if (["10", "11"].includes(number)) {
+                const configured = (await service("/contract_demo_launcher/set_parameters", {
+                  parameters: [
+                    {
+                      name: "database_path",
+                      value: {
+                        type: 4,
+                        string_value: databasePath,
+                        bool_value: false,
+                        integer_value: 0,
+                        double_value: 0,
+                        byte_array_value: [],
+                        bool_array_value: [],
+                        integer_array_value: [],
+                        double_array_value: [],
+                        string_array_value: [],
+                      },
+                    },
+                  ],
+                })) as { results?: { successful: boolean; reason: string }[] };
+                if (!configured.results?.every((value) => value.successful)) {
+                  throw new Error(
+                    configured.results?.map((value) => value.reason).join("; ") ?? "地图参数未确认",
+                  );
+                }
+              }
+              return await service(
+                `/contract_demo/gui/start/case_${number === "03" && withEkf ? "03_ekf" : number}`,
+              );
+            },
+            !launcherOnline ||
+              (["10", "11"].includes(number) && !databasePath) ||
+              launcher?.busy === true ||
+              item.profile === "missing" ||
+              item.profile === "service",
+          )}
+          {button("停止案例", async () => {
+            controlRef.current?.stop();
+            armRef.current = false;
+            setArmed(false);
+            return await service("/contract_demo/gui/stop");
+          })}
+        </Stack>
+        {launcher?.log && (
+          <details>
+            <summary>运行日志</summary>
+            <Typography
+              component="pre"
+              sx={{ maxHeight: 160, overflow: "auto", whiteSpace: "pre-wrap", fontSize: 12 }}
+            >
+              {launcher.log}
+            </Typography>
+          </details>
+        )}
         {tab === "guide" ? (
           <>
             <Typography variant="h6">
@@ -243,8 +545,20 @@ export default function LukaPanel({ context }: { context: PanelExtensionContext 
         ) : (
           <>
             <Alert severity={ready ? "info" : "warning"}>
-              {ready ? status : "等待新鲜底盘状态、轮速和双雷达；方向键禁用"}
+              {ready
+                ? status
+                : directManual
+                ? "等待新鲜底盘状态和编码器；方向键禁用"
+                : "等待新鲜底盘状态、轮速和双雷达；方向键禁用"}
             </Alert>
+            {directManual && (
+              <Typography variant="caption">
+                底盘独立手动验收：/cmd_vel；没有雷达碰撞保护，请由操作者观察周围。
+              </Typography>
+            )}
+            {lastBlocked && (
+              <Alert severity="warning">上次方向操作被安全门拦截：{lastBlocked}</Alert>
+            )}
             <FormControlLabel
               label="启用本次方向操作"
               control={
@@ -294,7 +608,9 @@ export default function LukaPanel({ context }: { context: PanelExtensionContext 
             })}
             {button("解除底盘暂停", () => service("/base_control/resume_now"))}
             {["09", "10"].includes(number) &&
-              button("保存当前 SLAM 地图（新文件）", () => service("/contract_demo/save_map"))}
+              button("保存 RTAB-Map 数据库（不发运动目标）", () =>
+                service("/contract_demo/save_map"),
+              )}
             {motionCases.includes(number) && (
               <>
                 <Typography>
@@ -375,6 +691,48 @@ export default function LukaPanel({ context }: { context: PanelExtensionContext 
             </Typography>
           </>
         )}
+        <FormControlLabel
+          label="已验收"
+          control={
+            <Checkbox checked={accepted} onChange={(_event, checked) => setAccepted(checked)} />
+          }
+        />
+        <Stack direction="row" gap={1}>
+          <Button
+            onClick={() => {
+              const next = {
+                ...records,
+                [number]: {
+                  number,
+                  title: item.title,
+                  accepted,
+                  at: new Date().toISOString(),
+                },
+              };
+              setRecords(next);
+              context.saveState({ ...config, caseNumber: number, records: next });
+              setResult(`${number} 已记录：${accepted ? "已验收" : "未验收"}`);
+            }}
+          >
+            记录
+          </Button>
+          <Button
+            onClick={() => {
+              const url = URL.createObjectURL(
+                new Blob([JSON.stringify(records, undefined, 2) ?? "{}"], {
+                  type: "application/json",
+                }),
+              );
+              const link = document.createElement("a");
+              link.href = url;
+              link.download = "Luka_合同验收记录.json";
+              link.click();
+              setTimeout(() => URL.revokeObjectURL(url), 1000);
+            }}
+          >
+            导出全部记录
+          </Button>
+        </Stack>
         <Typography variant="caption">
           ws://192.168.3.150:8765 · 原生 ROS 发布／服务调用 · 请求成功不等于验收通过
         </Typography>

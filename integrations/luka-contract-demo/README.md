@@ -1,9 +1,16 @@
 # Luka 原生 Foxglove 操作与合同验收
 
-Windows客户端：1.86.0-cn.13；机器人数据直连 `ws://192.168.3.150:8765`。
+Windows客户端：1.86.0-cn.16；机器人数据直连 `ws://192.168.3.150:8765`。
 所有交互使用Foxglove的原生面板、React/MUI控件和ROS bridge，不加载旧网页或iframe，不启动dashboard服务。
 
-## 一键启动
+## GUI验收入口
+
+总布局默认从01开始；每项显示经过原DOCX核对的合同原文。点击“开始案例”由远端管理器调用对应ROS launch或节点，状态和失败原因直接显示。
+
+导入[GUI总布局](acceptance/Luka_合同验收_GUI.json)，连接`ws://192.168.3.150:8765`，选择案例→开始→操作→停止→勾选是否已验收→记录。
+用户日常无需PowerShell或SSH终端；开机GUI服务不自动启动硬件。完整步骤见[GUI使用说明](GUI_README.md)。
+
+## 兼容命令行入口
 
 ```powershell
 $demoScript="D:\Workspace\foxglove-studio-cn\integrations\luka-contract-demo\start_demo.ps1"

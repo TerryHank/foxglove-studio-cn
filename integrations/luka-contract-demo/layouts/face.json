@@ -29,13 +29,13 @@
   "layout": {
     "direction": "row",
     "first": {
-      "direction": "row",
+      "direction": "column",
       "first": "Image!luka0",
       "second": "RawMessages!luka1",
-      "splitPercentage": 55
+      "splitPercentage": 78
     },
     "second": "LukaConsole!face",
-    "splitPercentage": 52
+    "splitPercentage": 72
   },
   "globalVariables": {},
   "userNodes": {},

@@ -32,6 +32,8 @@ def node():
     n.nav, n.gate = Mock(), Mock()
     n.pending, n.goal, n.goal_at, n.goal_handle, n.deadline, n.generation = False, None, 0., None, 0., 0
     n.state, n.map_state, n.map_busy = {}, {}, False
+    n.stack_state = {}
+    n.verified, n.verified_at = True, native.time.monotonic()
     n.nav.server_is_ready.return_value = True
     n.gate.service_is_ready.return_value = True
     n.gate.call_async.return_value = Future()
@@ -122,3 +124,32 @@ def test_busy_map_refuses_duplicate_export(node):
     with patch.object(native.subprocess, "run") as run:
         assert not node.save_map(None, Trigger.Response()).success
         run.assert_not_called()
+
+
+def test_unverified_initial_pose_never_calls_base_gate(node):
+    node.stage(pose());node.verified=False
+    assert not node.send(None, Trigger.Response()).success
+    node.gate.call_async.assert_not_called()
+
+
+def test_stale_verification_never_calls_base_gate(node):
+    node.stage(pose());node.verified_at-=1
+    assert not node.send(None, Trigger.Response()).success
+    node.gate.call_async.assert_not_called()
+
+
+def test_lost_verification_while_gate_ack_pending_aborts(node):
+    node.stage(pose()); ack = Future(); node.gate.call_async.return_value = ack
+    node.send(None, Trigger.Response()); node.verified = False
+    ack.set_result(SimpleNamespace(success=True))
+    node.nav.send_goal_async.assert_not_called()
+    assert node.state['state'] == 'cancel_requested'
+
+
+def test_lost_verification_cancels_an_active_goal(node):
+    node.pending, node.goal_handle, node.verified = True, Mock(), False
+    handle = node.goal_handle
+    node.output, node.map_output = Mock(), Mock()
+    node.tick()
+    handle.cancel_goal_async.assert_called_once()
+    assert not node.pending

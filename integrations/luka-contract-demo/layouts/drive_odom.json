@@ -91,23 +91,23 @@
   "layout": {
     "direction": "row",
     "first": {
-      "direction": "row",
+      "direction": "column",
       "first": {
-        "direction": "column",
+        "direction": "row",
         "first": "Plot!luka0",
         "second": "Plot!luka1",
         "splitPercentage": 55
       },
       "second": {
-        "direction": "column",
+        "direction": "row",
         "first": "RawMessages!luka2",
         "second": "RawMessages!luka3",
         "splitPercentage": 55
       },
-      "splitPercentage": 55
+      "splitPercentage": 78
     },
     "second": "LukaConsole!drive_odom",
-    "splitPercentage": 52
+    "splitPercentage": 72
   },
   "globalVariables": {},
   "userNodes": {},

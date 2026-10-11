@@ -13,10 +13,10 @@ CASES={
 "02":("复用01场景；按事先量好的直线距离（例如0.50m）低速前进、停车，再验证后退/横移/转向。",
 "终端x/y/yaw、vx/vy/wz、measured_path与尺量/角度测量对照；记录设定速度、实测速度和停止误差。",
 "双方填写距离/角度/速度误差容限并验证闭环；当前麦克纳姆与合同四轮差速存在车型差异，需先明确验收模型。"),
-"03":("启动03看原始六轴；改变可测试的传感器姿态和角运动。融合测试先启动01，再在第二个终端03 -WithEkf -Run。",
+"03":("启动03看原始六轴；改变可测试的传感器姿态和角运动。融合测试勾选融合EKF，再点击开始；依赖底盘由GUI管理器复用或启动。",
 "加速度/角速度/姿态/协方差及时间戳；EKF面板需出现/contract_demo/odometry/filtered，同时有有效/wheel/odom。",
 "必须验证六轴、姿态及多传感器融合，不把默认原始IMU显示当完整融合验收。偏置、噪声和精度门槛由双方填写。"),
-"04":("启动04；在视野内移动/遮挡一个测试目标，对照原扫描、融合和去畸变。运动去畸变测试先启动01再运行04。",
+"04":("启动04；在视野内移动/遮挡一个测试目标，对照原扫描、融合和去畸变。GUI管理器复用或启动受保护底盘；使用原生方向键做运动去畸变测试。",
 "扫描点数、最近距离、目标位置、原/去畸变差异和时间戳。静止输出相同不能证明去畸变效果。",
 "驱动/滤波/稳定性及受控运动去畸变均需记录；目前是2D LaserScan，不应宣称已交付完整3D点云链。"),
 "05":("启动05；图像面板观察不同距离目标，移动目标；与尺量距离对照，可在图像中查看深度像素。",
@@ -31,10 +31,10 @@ CASES={
 "08":("启动08；查看实际节点、数据流、相机、位姿、地图和路径，逐层核对上游/下游。",
 "节点图、唯一设备/TF/速度出口所有者、异常/恢复日志。",
 "底盘→感知→定位→规划→安全执行链贯通；缺失的回充节点不能用占位节点代替。"),
-"09":("先启动01，用Foxglove方向键；另一个终端启动09，复用已有底盘/传感器，低速经过预定闭合路线。",
+"09":("选择09并点击开始；GUI管理器复用或启动底盘/传感器，使用原生方向键低速经过预定闭合路线。",
 "地图连续增长、墙体形状和闭环前后；位姿/扫描与地图对齐；记录漂移、覆盖、误差。",
 "按预定地图质量/误差容限通过真实建图和闭环；先停止09再停止01。不要同时启动AMCL/static map。"),
-"10":("保持09 SLAM活跃；在09原生控制点击保存当前SLAM地图，服务自动生成新文件名。停止SLAM，再用10 -MapYaml <保存结果中的YAML绝对路径>离线加载。3D显示地图不等于Nav2地图已切换；重启复用需另核开机参数。",
+"10":("保持09 SLAM活跃；在09原生控制点击保存当前SLAM地图，服务自动生成新文件名。保存完成后停止案例，选择10，在GUI地图列表选择保存结果的YAML，再点击开始。3D显示地图不等于Nav2地图已切换；重启复用需另核开机参数。",
 "map图像/YAML/posegraph文件与保存日志，重新加载后的尺寸/分辨率/关键结构和启动路径。",
 "保存、离线加载及断电重启自动复用全部实测；本次只加保存按钮，不自动改开机配置或覆盖生产地图。"),
 "11":("停止SLAM并启动11；在3D使用发布位姿估计工具向/initialpose发初始位姿，核对扫描与地图重合；原网页自动定位入口已停用。",
@@ -98,31 +98,30 @@ def generate(manifest,out):
         "主册为01–25共25项功能；01/02共享场景，26/27为交付与服务附录。目录编号保持原样。",
         "**本手册是验收操作计划，不是已经通过的验收报告。界面按钮不补齐缺失的固件、传感器或业务闭环。**",
         "", "## 通用启动与停止","",
-        '先在Windows PowerShell设置：', "",
-        '    $demoScript=\"D:\\Workspace\\foxglove-studio-cn\\integrations\\luka-contract-demo\\start_demo.ps1\"',
-        "", '然后：powershell.exe -NoProfile -ExecutionPolicy Bypass -File $demoScript -Item NN -Run。',
-        "无-Run只连接/选布局。01/02默认使用Foxglove原生方向键，终端键盘可在远端显式keyboard:=true启用。",
-        "完成一项后Ctrl+C，另一个窗口可运行对应stop.sh；不要仅关闭Foxglove当作停止。",
-        "01与09/04组合时先启动01，再启动算法；停止时先算法再01。SLAM与AMCL互斥。",
+        '在Foxglove导入Luka_合同验收_GUI.json，连接ws://192.168.3.150:8765。', "",
+        '    GUI操作：选择案例 → 开始案例 → 操作／观察 → 停止案例 → 保存并导出记录',
+        "", '在右侧选择案例编号，点击开始；左侧自动切换对应原生测量面板。',
+        "01/02使用原生方向按钮；所有运行入口均由GUI管理器调用，不需要终端键盘。",
+        "完成一项后点击停止案例并等待停稳确认；不要仅关闭Foxglove当作停止。",
+        "04/09及03融合由管理器准备依赖；SLAM与AMCL互斥，先停止当前案例再切换。",
         "", "## 记录规则","",
-        "每项填写操作者、日期、软件版本、测试条件、目标指标、实测值、原始日志/视频、异常/恢复、结论和未覆盖项。",
+        "GUI只选择是否已验收，再点击记录；编号、项目和时间自动保存。",
         "合同未给定的精度/时长/响应门槛由双方先填写；下面示例数值不替代约定。",
-        "只测到已实现部分时记录“部分通过”，不能把整项勾成通过。缺失项标阻塞，服务项用履约资料。",
+        "确认本项验收后再勾选；缺少实现的项目保留未验收。",
         ""]
-    parts=['<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Luka合同验收指南</title><style>body{font:16px/1.6 system-ui;margin:18px;background:#101923;color:#dfe8f3}a{color:#71d7c5}article{border:1px solid #39516a;border-radius:10px;padding:16px;margin:16px 0}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#1c2a39;padding:10px}button,input{font:inherit;padding:8px;margin:4px}button{cursor:pointer}.block{color:#ffcb76}.note{color:#a7bdcf}</style><h1>25项功能操作与验收</h1><p>01–25为主册；26/27为交付与服务附录。01/02共享运行场景。本文不是已通过的验收报告。</p><p class="block">缺固件/CAN、车型差异、充电/烟雾/权限联动和完整规范等缺口不能靠插件补齐。按实测分别记录通过、部分通过、失败或阻塞。</p><p>启动仍由本机PowerShell；Foxglove原生按钮经过现有机器人门控。启动不自动发目标。结束用Ctrl+C/stop.sh。先确认停稳再切换互斥案例。</p><p>'+ " · ".join(f'<a href="#case-{i["number"]}">{i["number"]}</a>' for i in items)+"</p>"]
+    parts=['<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Luka合同验收指南</title><style>body{font:16px/1.6 system-ui;margin:18px;background:#101923;color:#dfe8f3}a{color:#71d7c5}article{border:1px solid #39516a;border-radius:10px;padding:16px;margin:16px 0}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#1c2a39;padding:10px}button,input{font:inherit;padding:8px;margin:4px}button{cursor:pointer}.block{color:#ffcb76}.note{color:#a7bdcf}</style><h1>25项功能操作与验收</h1><p>01–25为主册；26/27为交付与服务附录。01/02共享运行场景。本文不是已通过的验收报告。</p><p class="block">缺固件/CAN、车型差异、充电/烟雾/权限联动和完整规范等缺口不能靠插件补齐。按实测分别记录通过、部分通过、失败或阻塞。</p><p>开始／停止和验收均在Foxglove GUI内操作；原生按钮经过现有机器人门控。启动不自动发目标。先停止案例、确认停稳再切换。</p><p>'+ " · ".join(f'<a href="#case-{i["number"]}">{i["number"]}</a>' for i in items)+"</p>"]
     for i in items:
         n=i["number"]; action,obs,criterion=CASES[n]
         group=i.get("launch_group","drive_odom" if i["profile"]=="drive_odom" else "imu_axes")
-        command=f'powershell.exe -NoProfile -ExecutionPolicy Bypass -File $demoScript -Item {n} -Run'
+        command=f'Foxglove：选择案例 {n} → 开始案例'
         md += [f'## {n} {i["clause"]} {i["title"]}',"",f'当前：{i["folder_status_suffix"]}',"",f'启动：{command}',"",f'操作：{action}',"",f'观察与证据：{obs}',"",f'通过条件／阻塞：{criterion}',"",f'代码限制：{i["limitation"]}',""]
-        if n=="03":md += ["融合启动加参数 -WithEkf；需要有效轮里程计。",""]
-        if "launch" in i:
-            md += [f'独立停止：ssh sunrise@192.168.3.150 "python3 /home/sunrise/luka_ws/src/examples/contract_demo/_shared/stop_launch.py {group}"',""]
+        if n=="03":md += ["融合启动勾选“融合EKF”；需要有效轮里程计。",""]
+        md += ["停止：Foxglove右侧停止案例按钮；等待GUI状态确认。", ""]
         parts.append(f'<article id="case-{n}"><h2>{n} {html.escape(i["clause"]+" "+i["title"])}</h2><p class="block">当前：{html.escape(i["folder_status_suffix"])}</p><pre>{html.escape(command)}</pre><h3>操作</h3><p>{html.escape(action)}</p><h3>观察与证据</h3><p>{html.escape(obs)}</p><h3>整项验收条件／缺口</h3><p>{html.escape(criterion)}</p><p class="note">{html.escape(i["limitation"])}</p>')
         parts.append('</article>')
     parts.append('</html>')
-    native=[dict(number=i['number'],title=i['title'],status=i['folder_status_suffix'],
-                 action=CASES[i['number']][0],observation=CASES[i['number']][1],
+    native=[dict(number=i['number'],title=i['title'],clause=i['clause'],requirement=i['requirement'],status=i['folder_status_suffix'],
+                 profile=i['profile'],action=CASES[i['number']][0],observation=CASES[i['number']][1],
                  criterion=CASES[i['number']][2],limitation=i['limitation']) for i in items]
     panel=Path(__file__).resolve().parents[2]/'packages/studio-base/src/panels/LukaConsole/guide.json'
     panel.write_text(json.dumps(native,ensure_ascii=False,indent=2)+'\n',encoding='utf-8',newline='\n')
@@ -130,8 +129,8 @@ def generate(manifest,out):
     (out/"ACCEPTANCE_GUIDE.html").write_text("\n".join(parts),encoding="utf-8",newline="\n")
     with (out/"acceptance_record_template.csv").open("w",encoding="utf-8-sig",newline="") as f:
         w=csv.writer(f,lineterminator="\n")
-        w.writerow(["编号","合同条款","功能","当前代码状态","操作者","日期","测试条件","约定指标","实测值","证据路径","结果","未覆盖项"])
-        for i in items:w.writerow([i["number"],i["clause"],i["title"],i["folder_status_suffix"],"","","","","","","未验收",i["limitation"]])
+        w.writerow(["编号","功能","是否已验收","记录时间"])
+        for i in items:w.writerow([i["number"],i["title"],"否",""])
     print("Generated guide for 25 functional cases and 2 delivery/service appendices")
 
 if __name__=="__main__":

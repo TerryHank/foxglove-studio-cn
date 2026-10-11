@@ -1,0 +1,135 @@
+{
+  "configById": {
+    "Image!follow": {
+      "foxglovePanelTitle": "人体画面 · 框/ID/距离",
+      "imageMode": {
+        "imageTopic": "/person_follow/gui/image/compressed"
+      },
+      "scene": {},
+      "topics": {},
+      "transforms": {},
+      "layers": {},
+      "version": 1
+    },
+    "Image!depth": {
+      "foxglovePanelTitle": "注册深度 · mm",
+      "imageMode": {
+        "imageTopic": "/camera/depth/image_raw",
+        "colorMode": "colormap",
+        "colorMap": "turbo",
+        "minValue": 0,
+        "maxValue": 6000
+      },
+      "scene": {},
+      "topics": {},
+      "transforms": {},
+      "layers": {},
+      "version": 1
+    },
+    "RawMessages!target": {
+      "foxglovePanelTitle": "当前目标（轻量）",
+      "topicPath": "/person_follow/target",
+      "expansion": "all",
+      "diffEnabled": false,
+      "diffMethod": "previous message",
+      "diffTopicPath": "",
+      "showFullMessageForDiff": false,
+      "fontSize": 14
+    },
+    "RawMessages!diagnostics": {
+      "foxglovePanelTitle": "门控与动作诊断",
+      "topicPath": "/person_follow/integration_diagnostics",
+      "expansion": "all",
+      "diffEnabled": false,
+      "diffMethod": "previous message",
+      "diffTopicPath": "",
+      "showFullMessageForDiff": false,
+      "fontSize": 14
+    },
+    "Plot!motion": {
+      "foxglovePanelTitle": "实测轮速与转速",
+      "paths": [
+        {
+          "value": "/wheel/odom.twist.twist.linear.x",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "vx m/s"
+        },
+        {
+          "value": "/wheel/odom.twist.twist.angular.z",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "wz rad/s"
+        }
+      ],
+      "showLegend": true,
+      "legendDisplay": "top",
+      "showPlotValuesInLegend": true,
+      "xAxisVal": "timestamp",
+      "followingViewWidth": 20
+    },
+    "3D!follow": {
+      "foxglovePanelTitle": "生产地图 · 人体与候选",
+      "followTf": "map",
+      "scene": {},
+      "topics": {
+        "/map": {
+          "visible": true
+        },
+        "/person_follow/target_pose": {
+          "visible": true
+        },
+        "/person_follow/goal_candidate": {
+          "visible": true
+        },
+        "/person_follow/spin_candidate": {
+          "visible": true
+        }
+      },
+      "transforms": {},
+      "layers": {},
+      "version": 1
+    },
+    "LukaConsole!follow": {
+      "initialView": "follow",
+      "caseNumber": "follow"
+    }
+  },
+  "layout": {
+    "direction": "row",
+    "first": {
+      "direction": "row",
+      "first": {
+        "direction": "column",
+        "first": "Image!follow",
+        "second": "Image!depth",
+        "splitPercentage": 58
+      },
+      "second": {
+        "direction": "column",
+        "first": "3D!follow",
+        "second": {
+          "direction": "column",
+          "first": "Plot!motion",
+          "second": {
+            "direction": "column",
+            "first": "RawMessages!target",
+            "second": "RawMessages!diagnostics",
+            "splitPercentage": 50
+          },
+          "splitPercentage": 50
+        },
+        "splitPercentage": 50
+      },
+      "splitPercentage": 51
+    },
+    "second": "LukaConsole!follow",
+    "splitPercentage": 66
+  },
+  "globalVariables": {},
+  "userNodes": {},
+  "playbackConfig": {
+    "speed": 1
+  },
+  "version": 1
+}

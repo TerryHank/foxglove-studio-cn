@@ -65,7 +65,7 @@
           "pointSize": 3,
           "decayTime": 0
         },
-        "/amcl_pose": {
+        "/rtabmap_rgbd/localization_pose": {
           "visible": true,
           "color": "#fb923c",
           "pointSize": 3,
@@ -73,19 +73,12 @@
         }
       }
     },
-    "RawMessages!luka1": {
-      "foxglovePanelTitle": "底盘反馈",
-      "topicPath": "/wheel/odom",
-      "expansion": "all",
-      "diffEnabled": false,
-      "diffMethod": "previous message",
-      "diffTopicPath": "",
-      "showFullMessageForDiff": false,
-      "fontSize": 14
+    "TopicGraph!luka1": {
+      "foxglovePanelTitle": "ROS节点与数据流"
     },
     "RawMessages!luka2": {
-      "foxglovePanelTitle": "IMU",
-      "topicPath": "/imu/data",
+      "foxglovePanelTitle": "底盘反馈",
+      "topicPath": "/wheel/odom",
       "expansion": "all",
       "diffEnabled": false,
       "diffMethod": "previous message",
@@ -112,23 +105,23 @@
   "layout": {
     "direction": "row",
     "first": {
-      "direction": "row",
-      "first": {
-        "direction": "column",
-        "first": "3D!luka0",
-        "second": "RawMessages!luka1",
-        "splitPercentage": 55
-      },
+      "direction": "column",
+      "first": "3D!luka0",
       "second": {
-        "direction": "column",
-        "first": "RawMessages!luka2",
+        "direction": "row",
+        "first": {
+          "direction": "column",
+          "first": "TopicGraph!luka1",
+          "second": "RawMessages!luka2",
+          "splitPercentage": 55
+        },
         "second": "Image!luka3",
         "splitPercentage": 55
       },
-      "splitPercentage": 55
+      "splitPercentage": 78
     },
     "second": "LukaConsole!layers",
-    "splitPercentage": 52
+    "splitPercentage": 72
   },
   "globalVariables": {},
   "userNodes": {},
