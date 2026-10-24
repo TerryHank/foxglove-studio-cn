@@ -29,3 +29,13 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build-desktop-cn.ps1
 ```
 
 安装包生成在 `desktop-cn/dist/`。该目录的构建产物通过 Release 发布；Git 分支保存源码。
+
+## Windows 本机参数链接（2026-10-24）
+
+- 单车导航参数面板的“说明”在 Windows 默认浏览器打开 Nav2 官方页面，并显示浏览器调用失败的原因。
+- 参数标题按当前连接机器人的配置目录信息，通过 Windows OpenSSH 下载文件，再用本机 VS Code 跳到对应行列；未安装 VS Code 时使用默认文件编辑器。
+- 下载副本位于 `%APPDATA%/foxglove-studio-cn/remote-configs/<机器人地址>/snapshot-*/`，旁边的 `.source.json` 记录远端路径与下载时间。每次点击新建副本，本机编辑不会自动上传。
+- SSH 使用本机已有配置与密钥（例如 `%USERPROFILE%/.ssh/config` 中对应机器人主机的 `User iecme`）；连接或认证失败会显示错误，不会退回到机器人桌面打开。
+- 回归验证：`node --test desktop-cn/test-parameter-links.cjs`。
+
+此项更新属于 Windows 分支源码；上面的 CN.21 旧安装包未包含这次改动。本机已安装客户端另行更新。

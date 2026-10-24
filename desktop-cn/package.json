@@ -35,6 +35,8 @@
     "files": [
       "main.cjs",
       "demo-control.cjs",
+      "parameter-links.cjs",
+      "parameter-links-preload.cjs",
       "NOTICE.zh-CN.txt",
       "build/icon.png"
     ],

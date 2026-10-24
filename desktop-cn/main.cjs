@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, shell } = require("electron");
+const { app, BrowserWindow, Menu, shell, ipcMain } = require("electron");
 const path = require("node:path");
 const fs = require("node:fs");
 
@@ -17,6 +17,16 @@ app.setPath("userData", path.join(app.getPath("appData"), "foxglove-studio-cn"))
 app.commandLine.appendSwitch("lang", "zh-CN");
 
 const primaryInstance = app.requestSingleInstanceLock();
+
+if (process.platform === "win32") {
+  ipcMain.handle("parameter-links:open-docs", async (_event, value) => {
+    const url = new URL(value);
+    if (!["https:", "http:"].includes(url.protocol)) throw new Error("官方说明地址无效");
+    await shell.openExternal(url.href);
+  });
+  ipcMain.handle("parameter-links:open-config", (_event, target, source) =>
+    require("./parameter-links.cjs").openConfig({ app, shell }, target, source));
+}
 
 function enableDemoControl() {
   if (demoControlStarted) {
@@ -100,6 +110,7 @@ function createWindow() {
     backgroundColor: "#111418",
     autoHideMenuBar: false,
     webPreferences: {
+      ...(process.platform === "win32" ? { preload: path.join(__dirname, "parameter-links-preload.cjs") } : {}),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,

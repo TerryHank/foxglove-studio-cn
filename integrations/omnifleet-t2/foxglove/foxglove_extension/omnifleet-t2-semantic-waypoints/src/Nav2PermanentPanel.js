@@ -249,6 +249,22 @@ export function initNav2HotParamsPanel(context) {
   let parameterLinks = {};
   async function openParameterLink(id, index = 0, docs = false) {
     try {
+      if (window.foxgloveParameterLinks) {
+        const entry = parameterLinks[id];
+        if (docs) {
+          if (!entry?.docs?.url) throw new Error('官方说明链接尚未读取，请先读取永久配置');
+          await window.foxgloveParameterLinks.openDocs(entry.docs.url);
+          setStatus('已在本机浏览器打开官方说明：' + entry.docs.url, 'ok');
+        } else {
+          const target = entry?.targets?.[index];
+          if (!target) throw new Error('配置位置尚未读取，请先读取永久配置');
+          const source = window.foxgloveDemoControl?.status()?.source || new URL(location.href).searchParams.get('ds.url');
+          setStatus('正在下载远端配置到 Windows……');
+          const opened = await window.foxgloveParameterLinks.openConfig(target, source);
+          setStatus('已下载到本机，并交给 ' + opened.editor + ' 打开：' + opened.localPath + ':' + opened.line + ':' + opened.column + '\n这是下载副本，本机修改不会自动写回机器人。', 'ok');
+        }
+        return;
+      }
       const response = await call(robotPath('/omnifleet_t2/nav2/save_parameters'), {parameters:[{
         name:docs ? '__open_docs' : '__open_config',
         value:{type:4,string_value:JSON.stringify({id,index})}
