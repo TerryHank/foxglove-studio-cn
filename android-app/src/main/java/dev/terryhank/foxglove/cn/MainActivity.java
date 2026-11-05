@@ -19,7 +19,6 @@ public final class MainActivity extends Activity {
     private WebView web;
     private LocalAssetServer server;
     private ValueCallback<Uri[]> fileCallback;
-    private TextView status;
     private ProgressBar progress;
     private SharedPreferences preferences;
 
@@ -43,23 +42,11 @@ public final class MainActivity extends Activity {
                     insets.getSystemWindowInsetRight(), insets.getSystemWindowInsetBottom());
             return insets;
         });
-        LinearLayout bar = new LinearLayout(this);
-        bar.setGravity(Gravity.CENTER_VERTICAL);
-        status = new TextView(this);
-        status.setTextColor(Color.WHITE);
-        status.setTextSize(12);
-        status.setPadding(dp(10), 0, dp(4), 0);
-        status.setMaxLines(2);
-        status.setText("Foxglove 中文 · Android 测试版");
-        bar.addView(status, new LinearLayout.LayoutParams(0, dp(52), 1));
-        addButton(bar, "连接", v -> connectionDialog());
-        addButton(bar, "重载", v -> web.reload());
-        addButton(bar, "说明", v -> about());
-        root.addView(bar);
         progress = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
         root.addView(progress, new LinearLayout.LayoutParams(-1, dp(2)));
         web = new WebView(this);
         WebSettings settings = web.getSettings();
+        settings.setUserAgentString(settings.getUserAgentString() + " FoxgloveAndroid");
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
         settings.setAllowFileAccess(false);
@@ -75,6 +62,11 @@ public final class MainActivity extends Activity {
         web.setWebViewClient(new WebViewClient() {
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();
+                if (request.isForMainFrame() && "foxglove-android://settings".equals(uri.toString())
+                    && view.getUrl() != null && isLocal(Uri.parse(view.getUrl()))) {
+                    showAndroidSettings();
+                    return true;
+                }
                 if (isLocal(uri)) return false;
                 if (request.isForMainFrame() && ("https".equals(uri.getScheme()) || "http".equals(uri.getScheme()))) {
                     new AlertDialog.Builder(MainActivity.this).setTitle("打开外部链接？")
@@ -87,9 +79,12 @@ public final class MainActivity extends Activity {
                 return true;
             }
             @Override public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
-                if (request.isForMainFrame()) status.setText("页面加载失败，请尝试重载");
+                if (request.isForMainFrame()) {
+                    new AlertDialog.Builder(MainActivity.this).setTitle("页面加载失败")
+                        .setNegativeButton("取消", null)
+                        .setPositiveButton("重载", (d, w) -> view.reload()).show();
+                }
             }
-            @Override public void onPageFinished(WebView view, String url) { updateLabel(); }
         });
         web.setWebChromeClient(new WebChromeClient() {
             @Override public void onProgressChanged(WebView view, int p) {
@@ -125,11 +120,16 @@ public final class MainActivity extends Activity {
         Uri.Builder u = Uri.parse(server.origin() + "/").buildUpon();
         if (!bridge.isEmpty()) u.appendQueryParameter("ds", "foxglove-websocket").appendQueryParameter("ds.url", bridge);
         web.loadUrl(u.build().toString());
-        updateLabel();
     }
-    private void updateLabel() {
-        String bridge = preferences.getString("bridge", "");
-        status.setText(bridge.isEmpty() ? "Foxglove 中文\n点击连接填写机器人地址" : "连接目标（非在线状态）\n" + bridge);
+    private void showAndroidSettings() {
+        new AlertDialog.Builder(this).setTitle("Android 设置")
+            .setItems(new String[]{"连接机器人", "重载界面", "说明"}, (dialog, which) -> {
+                switch (which) {
+                    case 0: connectionDialog(); break;
+                    case 1: web.reload(); break;
+                    case 2: about(); break;
+                }
+            }).show();
     }
     private void connectionDialog() {
         final EditText input = new EditText(this);
@@ -167,12 +167,6 @@ public final class MainActivity extends Activity {
             .setPositiveButton("知道了", null)
             .setNeutralButton("许可证", (d, w) -> web.loadUrl(server.origin() + "/NOTICE.android.txt"))
             .show();
-    }
-    private void addButton(LinearLayout parent, String text, View.OnClickListener listener) {
-        Button button = new Button(this);
-        button.setText(text); button.setTextSize(13); button.setMinWidth(0); button.setMinimumWidth(0);
-        button.setPadding(dp(8), 0, dp(8), 0); button.setOnClickListener(listener);
-        parent.addView(button, new LinearLayout.LayoutParams(dp(56), dp(48)));
     }
     private int dp(int value) { return Math.round(value * getResources().getDisplayMetrics().density); }
     private void toast(String text) { Toast.makeText(this, text, Toast.LENGTH_LONG).show(); }
