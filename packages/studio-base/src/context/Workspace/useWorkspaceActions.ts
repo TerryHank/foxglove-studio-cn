@@ -23,6 +23,7 @@ import {
 import useCallbackWithToast from "@foxglove/studio-base/hooks/useCallbackWithToast";
 import { AppEvent } from "@foxglove/studio-base/services/IAnalytics";
 import { downloadTextFile } from "@foxglove/studio-base/util/download";
+import showOpenFilePicker from "@foxglove/studio-base/util/showOpenFilePicker";
 
 import {
   LeftSidebarItemKey,
@@ -116,23 +117,26 @@ export function useWorkspaceActions(): WorkspaceActions {
   );
 
   const importLayoutFromFile = useCallbackWithToast(async () => {
-    const fileHandles = await showOpenFilePicker({
-      multiple: false,
-      excludeAcceptAllOption: false,
-      types: [
-        {
-          description: "JSON 文件",
-          accept: {
-            "application/json": [".json"],
-          },
-        },
-      ],
-    });
-    if (!isMounted()) {
+    let file: File | undefined;
+    if (typeof window.showOpenFilePicker === "function") {
+      const [handle] = await showOpenFilePicker({
+        types: [{ description: "JSON 文件", accept: { "application/json": [".json"] } }],
+      });
+      file = await handle?.getFile();
+    } else {
+      file = await new Promise<File | undefined>((resolve) => {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = ".json,application/json";
+        input.onchange = () => resolve(input.files?.[0]);
+        input.oncancel = () => resolve(undefined);
+        input.click();
+      });
+    }
+    if (!file || !isMounted()) {
       return;
     }
 
-    const file = await fileHandles[0].getFile();
     const content = await file.text();
 
     if (!isMounted()) {
