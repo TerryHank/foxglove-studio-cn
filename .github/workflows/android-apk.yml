@@ -1,0 +1,48 @@
+name: Android APK (offline Web UI)
+on:
+  push:
+    branches: ['build/android-apk-20261105']
+    paths: ['android-app/**', '.github/workflows/android-apk.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: android-apk-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build-apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install Web dependencies
+        run: |
+          corepack enable
+          corepack yarn install --immutable
+      - name: Build Chinese Web UI
+        run: corepack yarn web:build:prod
+      - name: Prepare Android SDK
+        run: |
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Build and verify signed test APK
+        run: bash android-app/build-apk.sh
+      - name: Archive corresponding source
+        run: git archive --format=zip --output=android-app/build/out/foxglove-android-corresponding-source.zip HEAD
+      - uses: actions/upload-artifact@v4
+        with:
+          name: foxglove-studio-cn-android-test
+          path: android-app/build/out/
+          if-no-files-found: error
+          retention-days: 30
