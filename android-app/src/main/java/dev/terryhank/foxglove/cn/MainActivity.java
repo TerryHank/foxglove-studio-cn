@@ -138,6 +138,7 @@ public final class MainActivity extends Activity {
                         break;
                     case 5: startActivity(new Intent(this, RobotWifiActivity.class)); break;
                     case 6:
+                        web.loadUrl("about:blank");
                         startActivity(new Intent(this, VisionFollowActivity.class).putExtra("url",
                             server.origin() + "/vision-follow.html?bridge=" + Uri.encode(preferences.getString("bridge", DEFAULT_BRIDGE))));
                         break;
@@ -194,7 +195,13 @@ public final class MainActivity extends Activity {
         showAndroidSettings();
     }
     @Override protected void onPause() { if (web != null) web.onPause(); super.onPause(); }
-    @Override protected void onResume() { super.onResume(); if (web != null) web.onResume(); }
+    @Override protected void onResume() {
+        super.onResume();
+        if (web != null) {
+            web.onResume();
+            if ("about:blank".equals(web.getUrl())) loadStudio(preferences.getString("bridge", DEFAULT_BRIDGE));
+        }
+    }
     @Override protected void onDestroy() {
         if (fileCallback != null) { fileCallback.onReceiveValue(null); fileCallback = null; }
         if (web != null) { web.stopLoading(); web.destroy(); }
