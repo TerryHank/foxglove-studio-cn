@@ -391,6 +391,10 @@ function RawMessages(props: Props) {
       (data != undefined && typeof data !== "object") ||
       (isSingleElemArray(data) && data[0] != undefined && typeof data[0] !== "object");
     const singleVal = isSingleElemArray(data) ? data[0] : data;
+    const singleValueLabel =
+      topicPath === "/voltage.data" && typeof singleVal === "number" && Number.isFinite(singleVal)
+        ? `${singleVal.toFixed(1)} V`
+        : String(singleVal);
 
     const diffData =
       diffItem && dataWithoutWrappingArray(diffItem.queriedData.map(({ value }) => value));
@@ -427,7 +431,7 @@ function RawMessages(props: Props) {
             whiteSpace="pre-wrap"
             style={{ wordWrap: "break-word" }}
           >
-            <MaybeCollapsedValue itemLabel={String(singleVal)} />
+            <MaybeCollapsedValue itemLabel={singleValueLabel} />
           </Typography>
         ) : diffEnabled && _.isEqual({}, diff) ? (
           <EmptyState>未发现差异</EmptyState>
