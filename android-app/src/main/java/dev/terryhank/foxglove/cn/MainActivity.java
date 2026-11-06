@@ -16,6 +16,7 @@ import java.net.URISyntaxException;
 /** Offline-bundled Web UI. No ROS or scheduling engine runs on Android. */
 public final class MainActivity extends Activity {
     private static final int PICK_FILE = 1001;
+    private static final String DEFAULT_BRIDGE = "ws://192.168.144.108:8765";
     private WebView web;
     private LocalAssetServer server;
     private ValueCallback<Uri[]> fileCallback;
@@ -110,7 +111,7 @@ public final class MainActivity extends Activity {
             toast("此测试版尚未适配文件导出，请在桌面版导出布局或数据。"));
         root.addView(web, new LinearLayout.LayoutParams(-1, 0, 1));
         setContentView(root);
-        loadStudio(preferences.getString("bridge", ""));
+        loadStudio(preferences.getString("bridge", DEFAULT_BRIDGE));
     }
     private boolean isLocal(Uri uri) {
         return server != null && "http".equals(uri.getScheme()) && "127.0.0.1".equals(uri.getHost())
@@ -126,7 +127,7 @@ public final class MainActivity extends Activity {
             .setItems(new String[]{"连接机器人", "重载界面", "显示/隐藏工具栏", "说明", "退出应用"}, (dialog, which) -> {
                 switch (which) {
                     case 0: connectionDialog(); break;
-                    case 1: loadStudio(preferences.getString("bridge", "")); break;
+                    case 1: loadStudio(preferences.getString("bridge", DEFAULT_BRIDGE)); break;
                     case 2:
                         web.evaluateJavascript("document.documentElement.toggleAttribute('data-android-toolbar-visible')", null);
                         break;
@@ -142,8 +143,8 @@ public final class MainActivity extends Activity {
         final EditText input = new EditText(this);
         input.setSingleLine(true);
         input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
-        input.setHint("ws://192.168.1.20:8765");
-        input.setText(preferences.getString("bridge", ""));
+        input.setHint(DEFAULT_BRIDGE);
+        input.setText(preferences.getString("bridge", DEFAULT_BRIDGE));
         LinearLayout box = new LinearLayout(this);
         box.setOrientation(LinearLayout.VERTICAL);
         box.setPadding(dp(20), dp(8), dp(20), 0);
@@ -153,7 +154,7 @@ public final class MainActivity extends Activity {
         final AlertDialog dialog = new AlertDialog.Builder(this).setTitle("连接机器人")
             .setView(box).setNegativeButton("取消", null)
             .setNeutralButton("不连接 / 打开本地文件", (d, w) -> {
-                preferences.edit().remove("bridge").apply(); loadStudio("");
+                preferences.edit().putString("bridge", "").apply(); loadStudio("");
             }).setPositiveButton("保存并连接", null).create();
         dialog.setOnShowListener(d -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
             String value = input.getText().toString().trim();
