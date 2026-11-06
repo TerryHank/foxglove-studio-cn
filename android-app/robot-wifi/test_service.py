@@ -1,5 +1,6 @@
 import importlib.util
 from pathlib import Path
+import tempfile
 import threading
 import unittest
 from unittest.mock import patch
@@ -62,6 +63,29 @@ class FakeManager(service.NetworkManager):
 
 
 class WifiTests(unittest.TestCase):
+    def test_manual_scan_temporarily_bypasses_realtek_busy_traffic_and_restores(self):
+        for error in (None, service.dbus.DBusException('busy'), RuntimeError('failed')):
+            with self.subTest(error=error), tempfile.TemporaryDirectory() as directory:
+                threshold = Path(directory) / 'scan_interval_thr'
+                threshold.write_text('scan interval threshold = 16000 ms\n')
+                manager = service.NetworkManager.__new__(service.NetworkManager)
+                manager.device = '/device'
+                manager.bus = SimpleNamespace(get_object=lambda *args: None)
+                scans = iter([10, 11])
+                manager.properties = lambda *args: {'LastScan': next(scans)}
+                manager.networks = lambda: [{'ssid': 'Jeremy'}]
+                def scan(*args):
+                    self.assertEqual(threshold.read_text(), '4294967295\n')
+                    if error:
+                        raise error
+                wireless = SimpleNamespace(RequestScan=scan)
+                with patch.object(service, 'Path', return_value=threshold), patch.object(service.dbus, 'Interface', return_value=wireless):
+                    if isinstance(error, RuntimeError):
+                        with self.assertRaises(RuntimeError): manager.scan()
+                    else:
+                        self.assertEqual(manager.scan()['networks'], [{'ssid': 'Jeremy'}])
+                self.assertEqual(threshold.read_text(), '16000\n')
+
     def test_already_connected_reuses_connection(self):
         manager = FakeManager([('BIT', True, 100, '/old_active')])
         result = manager.connect({'ssid': 'BIT', 'security': 'wpa-psk'})

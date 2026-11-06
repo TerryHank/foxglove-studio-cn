@@ -76,16 +76,26 @@ class NetworkManager:
     def scan(self):
         wireless = dbus.Interface(self.bus.get_object(NM, self.device), WIRELESS)
         previous = self.properties(self.device, WIRELESS)['LastScan']
+        threshold = Path('/proc/net/rtl88x2ce/wlP1p1s0/scan_interval_thr')
+        original = None
         try:
-            wireless.RequestScan(dbus.Dictionary({}, signature='sv'))
-        except dbus.DBusException:
-            return {'networks': self.networks(), 'message': '显示最近扫描结果，可稍后刷新'}
-        deadline = time.monotonic() + 15
-        while time.monotonic() < deadline:
-            if self.properties(self.device, WIRELESS)['LastScan'] > previous:
-                return {'networks': self.networks(), 'message': '扫描完成'}
-            time.sleep(0.5)
-        return {'networks': self.networks(), 'message': '显示最近扫描结果'}
+            if threshold.exists():
+                original = threshold.read_text().split('=')[1].strip().split()[0]
+                # RTL8822CE otherwise reports a completed scan using stale results under traffic.
+                threshold.write_text('4294967295\n')
+            try:
+                wireless.RequestScan(dbus.Dictionary({}, signature='sv'))
+            except dbus.DBusException:
+                return {'networks': self.networks(), 'message': '显示最近扫描结果，可稍后刷新'}
+            deadline = time.monotonic() + 15
+            while time.monotonic() < deadline:
+                if self.properties(self.device, WIRELESS)['LastScan'] > previous:
+                    return {'networks': self.networks(), 'message': '扫描完成'}
+                time.sleep(0.5)
+            return {'networks': self.networks(), 'message': '显示最近扫描结果'}
+        finally:
+            if original is not None:
+                threshold.write_text(original + '\n')
 
     def connect(self, request):
         ssid = request.get('ssid', '')
