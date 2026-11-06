@@ -29,6 +29,8 @@ Android 首次启动采用 `android-app/default-layout.json` 中的 104 三维�
 
 104 相机配套修复记录在 `android-app/vision/robot104-camera.patch`：Orbbec 驱动只启用 raw 图像发布插件，JPEG 继续由 `gemini_pro_rgb_jpeg` 独立进程发布。这样避免摄像头进程内 OpenCV JPEG 压缩调用 Jetson `libnvjpeg.so` 导致崩溃。现场原文件保留 `.before-android-vision-20261107-010804` 备份。
 
+`robot104-bridge.patch` 记录现场 Bridge 传输队列调整：原 8 条消息积压上限会在视觉节点上线、公布话题及图像传输时触发断开。现设为 128 条、发送缓冲 8 MB，配置原件备份为 `/etc/omnifleet_t2/foxglove.yaml.before-android-vision-20261107`。进入视觉页时关闭后台地图的数据订阅，返回后恢复原布局与连接。
+
 ## 安全与限制
 
 - 这是测试签名 APK，不是商店发行包。签名每次重新构建可能改变，更新时可能需要卸载旧版，卸载会清除布局与连接设置。
