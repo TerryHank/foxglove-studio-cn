@@ -217,7 +217,7 @@ export function RendererOverlay(props: Props): JSX.Element {
   const onLongPressPublish = useCallback(() => {
     setPublishMenuExpanded(true);
   }, []);
-  const longPressPublishEvent = useLongPress(onLongPressPublish);
+  const longPressPublishEvent = useLongPress(onLongPressPublish, { isPreventDefault: false });
 
   const theme = useTheme();
 
