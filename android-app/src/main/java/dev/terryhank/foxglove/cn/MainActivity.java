@@ -123,11 +123,18 @@ public final class MainActivity extends Activity {
     }
     private void showAndroidSettings() {
         new AlertDialog.Builder(this).setTitle("Android 设置")
-            .setItems(new String[]{"连接机器人", "重载界面", "说明"}, (dialog, which) -> {
+            .setItems(new String[]{"连接机器人", "重载界面", "显示/隐藏工具栏", "说明", "退出应用"}, (dialog, which) -> {
                 switch (which) {
                     case 0: connectionDialog(); break;
-                    case 1: web.reload(); break;
-                    case 2: about(); break;
+                    case 1: loadStudio(preferences.getString("bridge", "")); break;
+                    case 2:
+                        web.evaluateJavascript("document.documentElement.toggleAttribute('data-android-toolbar-visible')", null);
+                        break;
+                    case 3: about(); break;
+                    case 4:
+                        new AlertDialog.Builder(this).setTitle("退出应用？").setMessage("退出后机器人数据连接将中断。")
+                            .setNegativeButton("取消", null).setPositiveButton("退出", (d, w) -> finish()).show();
+                        break;
                 }
             }).show();
     }
@@ -178,9 +185,7 @@ public final class MainActivity extends Activity {
         }
     }
     @Override public void onBackPressed() {
-        if (web != null && web.canGoBack()) { web.goBack(); return; }
-        new AlertDialog.Builder(this).setTitle("退出应用？").setMessage("退出后机器人数据连接将中断。")
-            .setNegativeButton("取消", null).setPositiveButton("退出", (d, w) -> finish()).show();
+        showAndroidSettings();
     }
     @Override protected void onPause() { if (web != null) web.onPause(); super.onPause(); }
     @Override protected void onResume() { super.onResume(); if (web != null) web.onResume(); }

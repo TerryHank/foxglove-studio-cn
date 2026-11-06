@@ -18,6 +18,12 @@ html = index.read_text()
 layout = json.loads((repo / "android-app/default-layout.json").read_text(encoding="utf-8"))
 bootstrap = json.dumps(layout, ensure_ascii=True, separators=(",", ":")).replace("<", "\\u003c")
 html = html.replace("/*FOXGLOVE_STUDIO_DEFAULT_LAYOUT_PLACEHOLDER*/", bootstrap, 1)
+html = html.replace(
+    "<head>",
+    '<head><style>html:not([data-android-toolbar-visible]) [data-tourid="app-bar"]'
+    '{display:none!important}</style>',
+    1,
+)
 if 'name="viewport"' not in html and "name='viewport'" not in html:
     html = html.replace("<head>", '<head><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">', 1)
 index.write_text(html)
