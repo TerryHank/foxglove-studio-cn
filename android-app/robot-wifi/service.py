@@ -109,6 +109,7 @@ class NetworkManager:
         previous = self.properties(previous_active, ACTIVE)['Connection'] if previous_active != '/' else '/'
         checkpoint = self.manager.CheckpointCreate(dbus.Array([self.device], signature='o'), dbus.UInt32(95), dbus.UInt32(2))
         candidate = None
+        deadline = time.monotonic() + 90
         try:
             if matches and not password:
                 activation = self.manager.ActivateConnection(matches[0][0], self.device, dbus.ObjectPath('/'))
@@ -123,7 +124,6 @@ class NetworkManager:
                     values['802-11-wireless-security'] = {'key-mgmt': security, 'psk': password}
                 settings = dbus.Dictionary({k: dbus.Dictionary(v, signature='sv') for k, v in values.items()}, signature='sa{sv}')
                 candidate, activation, _ = self.manager.AddAndActivateConnection2(settings, self.device, dbus.ObjectPath('/'), dbus.Dictionary({'persist': 'memory'}, signature='sv'))
-            deadline = time.monotonic() + 90
             while time.monotonic() < deadline:
                 status = self.status()
                 active = self.properties(self.device, DEVICE).get('ActiveConnection', '/')
@@ -140,6 +140,9 @@ class NetworkManager:
             restored = False
             try:
                 self.manager.CheckpointRollback(checkpoint)
+            except dbus.DBusException:
+                pass
+            try:
                 deadline = time.monotonic() + 20
                 while time.monotonic() < deadline:
                     active = self.properties(self.device, DEVICE).get('ActiveConnection', '/')
