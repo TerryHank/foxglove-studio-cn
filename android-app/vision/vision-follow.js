@@ -5,6 +5,7 @@ import { MessageReader, MessageWriter } from '@foxglove/rosmsg2-serialization';
 
 FoxgloveClient.SUPPORTED_SUBPROTOCOL = 'foxglove.sdk.v1';
 const ui = Object.fromEntries([...document.querySelectorAll('[id]')].map(el => [el.id, el]));
+if (new URLSearchParams(location.search).has('standalone')) ui.back.textContent = '退出';
 const CONTROL = '/vision/demo/control', STATUS = '/vision/demo/status';
 const RGB = '/camera/color/image_raw/compressed';
 const bodyService = '/body_tracking_104/horizon_tracking_RobotCmdVel/set_parameters';

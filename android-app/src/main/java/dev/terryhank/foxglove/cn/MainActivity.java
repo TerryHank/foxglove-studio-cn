@@ -27,7 +27,7 @@ public final class MainActivity extends Activity {
         super.onCreate(state);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         preferences = getSharedPreferences("connection", MODE_PRIVATE);
-        try { server = new LocalAssetServer(path -> getAssets().open("www/" + path), 18765); }
+        try { server = new LocalAssetServer(path -> getAssets().open("www/" + path), getPackageName().endsWith(".navigation") ? 18766 : 18765); }
         catch (IOException e) {
             new AlertDialog.Builder(this).setTitle("无法启动界面")
                 .setMessage("本地资源服务启动失败：" + e.getMessage())
@@ -123,8 +123,11 @@ public final class MainActivity extends Activity {
         web.loadUrl(u.build().toString());
     }
     private void showAndroidSettings() {
+        String[] items = getPackageName().endsWith(".navigation")
+            ? new String[]{"连接机器人", "重载界面", "显示/隐藏工具栏", "说明", "退出应用"}
+            : new String[]{"连接机器人", "重载界面", "显示/隐藏工具栏", "说明", "退出应用", "机器人 Wi-Fi", "视觉跟随演示"};
         new AlertDialog.Builder(this).setTitle("Android 设置")
-            .setItems(new String[]{"连接机器人", "重载界面", "显示/隐藏工具栏", "说明", "退出应用", "机器人 Wi-Fi", "视觉跟随演示"}, (dialog, which) -> {
+            .setItems(items, (dialog, which) -> {
                 switch (which) {
                     case 0: connectionDialog(); break;
                     case 1: loadStudio(preferences.getString("bridge", DEFAULT_BRIDGE)); break;
@@ -194,7 +197,13 @@ public final class MainActivity extends Activity {
     @Override public void onBackPressed() {
         showAndroidSettings();
     }
-    @Override protected void onPause() { if (web != null) web.onPause(); super.onPause(); }
+    @Override protected void onPause() {
+        if (web != null) {
+            if (getPackageName().endsWith(".navigation") && fileCallback == null) web.loadUrl("about:blank");
+            web.onPause();
+        }
+        super.onPause();
+    }
     @Override protected void onResume() {
         super.onResume();
         if (web != null) {

@@ -36,7 +36,8 @@ APK="$BUILD/out/foxglove-studio-cn-android-test.apk"
   --ks-pass pass:android --key-pass pass:android --out "$APK" "$BUILD/aligned.apk"
 "$TOOLS/apksigner" verify --verbose --print-certs "$APK" | tee "$BUILD/out/signature-verification.txt"
 "$TOOLS/aapt2" dump badging "$APK" > "$BUILD/out/apk-metadata.txt"
-(cd "$BUILD/out" && sha256sum foxglove-studio-cn-android-test.apk > SHA256SUMS.txt)
+python3 "$APP/scripts/build-standalone.py"
+(cd "$BUILD/out" && sha256sum *.apk > SHA256SUMS.txt)
 cp "$APP/README.zh-CN.md" "$BUILD/out/安装说明.txt"
 git -C "$ROOT" rev-parse HEAD > "$BUILD/out/source-commit.txt"
 echo "Built: $APK"

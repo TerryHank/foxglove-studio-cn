@@ -47,7 +47,7 @@ public final class RobotWifiActivity extends Activity {
         status = new TextView(this); status.setTextSize(16); status.setText("正在读取机器人网络状态…");
         root.addView(status);
         LinearLayout controls = new LinearLayout(this);
-        Button back = new Button(this); back.setText("返回 Foxglove"); back.setOnClickListener(v -> finish());
+        Button back = new Button(this); back.setText(getPackageName().endsWith(".wifi") ? "退出" : "返回 Foxglove"); back.setOnClickListener(v -> finish());
         refresh = new Button(this); refresh.setText("刷新热点"); refresh.setOnClickListener(v -> scan());
         hidden = new Button(this); hidden.setText("隐藏网络"); hidden.setOnClickListener(v -> connectDialog(null));
         controls.addView(back); controls.addView(refresh); controls.addView(hidden); root.addView(controls);
