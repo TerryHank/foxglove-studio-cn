@@ -13,6 +13,9 @@ dest = repo / "android-app/src/main/assets/www"
 if dest.exists():
     shutil.rmtree(dest)
 shutil.copytree(source, dest)
+for name in ("vision-follow.html", "vision-reference.js"):
+    shutil.copy2(repo / "android-app/vision" / name, dest / name)
+subprocess.run(["node", str(repo / "android-app/scripts/build-vision.cjs")], check=True, cwd=repo)
 index = dest / "index.html"
 html = index.read_text()
 layout = json.loads((repo / "android-app/default-layout.json").read_text(encoding="utf-8"))
@@ -21,7 +24,11 @@ html = html.replace("/*FOXGLOVE_STUDIO_DEFAULT_LAYOUT_PLACEHOLDER*/", bootstrap,
 html = html.replace(
     "<head>",
     '<head><style>html:not([data-android-toolbar-visible]) [data-tourid="app-bar"]'
-    '{display:none!important}</style>',
+    '{display:none!important}</style><script>try{'
+    'const k="fox.workspace",w=JSON.parse(localStorage.getItem(k))||{state:{},version:1};'
+    'w.state.sidebars??={left:{item:"panel-settings"},right:{open:false}};'
+    'w.state.sidebars.left.open=false;localStorage.setItem(k,JSON.stringify(w));'
+    '}catch(e){}</script>',
     1,
 )
 if 'name="viewport"' not in html and "name='viewport'" not in html:

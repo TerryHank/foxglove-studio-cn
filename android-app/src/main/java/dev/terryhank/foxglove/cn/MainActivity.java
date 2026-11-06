@@ -124,7 +124,7 @@ public final class MainActivity extends Activity {
     }
     private void showAndroidSettings() {
         new AlertDialog.Builder(this).setTitle("Android 设置")
-            .setItems(new String[]{"连接机器人", "重载界面", "显示/隐藏工具栏", "说明", "退出应用", "机器人 Wi-Fi"}, (dialog, which) -> {
+            .setItems(new String[]{"连接机器人", "重载界面", "显示/隐藏工具栏", "说明", "退出应用", "机器人 Wi-Fi", "视觉跟随演示"}, (dialog, which) -> {
                 switch (which) {
                     case 0: connectionDialog(); break;
                     case 1: loadStudio(preferences.getString("bridge", DEFAULT_BRIDGE)); break;
@@ -137,6 +137,10 @@ public final class MainActivity extends Activity {
                             .setNegativeButton("取消", null).setPositiveButton("退出", (d, w) -> finish()).show();
                         break;
                     case 5: startActivity(new Intent(this, RobotWifiActivity.class)); break;
+                    case 6:
+                        startActivity(new Intent(this, VisionFollowActivity.class).putExtra("url",
+                            server.origin() + "/vision-follow.html?bridge=" + Uri.encode(preferences.getString("bridge", DEFAULT_BRIDGE))));
+                        break;
                 }
             }).show();
     }
