@@ -135,17 +135,6 @@
           "colorMode": "colormap",
           "colorMap": "turbo"
         },
-        "/rslidar_points": {
-          "visible": false,
-          "pointSize": 1.5,
-          "colorMode": "colormap",
-          "colorField": "ring",
-          "colorMap": "turbo",
-          "pointShape": "circle",
-          "decayTime": 0,
-          "minValue": 0,
-          "maxValue": 95
-        },
         "/received_global_plan": {
           "visible": false,
           "color": "#ffe600",
@@ -231,17 +220,6 @@
           "frameLocked": true,
           "colorField": "z"
         },
-        "/visualization/local_scan_points": {
-          "visible": true,
-          "pointSize": 1.5,
-          "colorMode": "colormap",
-          "colorField": "intensity",
-          "colorMap": "turbo",
-          "pointShape": "circle",
-          "decayTime": 0,
-          "minValue": 4,
-          "maxValue": 100
-        },
         "/visualization/local_obstacle_points": {
           "visible": true,
           "pointSize": 1.5,
@@ -252,6 +230,9 @@
           "maxValue": 2,
           "pointShape": "circle",
           "decayTime": 0
+        },
+        "/navigation/goal_point": {
+          "visible": true
         }
       },
       "layers": {
@@ -290,9 +271,9 @@
         }
       },
       "publish": {
-        "type": "pose",
+        "type": "point",
         "poseTopic": "/goal_pose",
-        "pointTopic": "/clicked_point",
+        "pointTopic": "/navigation/goal_point",
         "poseEstimateTopic": "/initialpose",
         "poseEstimateXDeviation": 0.5,
         "poseEstimateYDeviation": 0.5,

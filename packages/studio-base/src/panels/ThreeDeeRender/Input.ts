@@ -8,6 +8,7 @@ import * as THREE from "three";
 import { Key } from "ts-key-enum";
 
 const MAX_DIST = 1;
+const TOUCH_TAP_DISTANCE = 8;
 
 const tempVec2 = new THREE.Vector2();
 
@@ -49,6 +50,7 @@ export class Input extends EventEmitter<InputEvents> {
   public canvasSize: THREE.Vector2;
   readonly #resizeObserver: ResizeObserver;
   #startClientPos?: THREE.Vector2;
+  #touchStartClientPos?: THREE.Vector2;
   #cursorCoords = new THREE.Vector2();
   #worldSpaceCursorCoords?: THREE.Vector3;
   #raycaster = new THREE.Raycaster();
@@ -174,23 +176,54 @@ export class Input extends EventEmitter<InputEvents> {
   };
 
   #onTouchStart = (event: TouchEvent): void => {
+    this.#startClientPos = undefined;
     const touch = event.touches[0];
-    if (touch) {
-      this.#startClientPos = new THREE.Vector2(touch.clientX, touch.clientY);
-    }
+    this.#touchStartClientPos =
+      event.touches.length === 1 && touch
+        ? new THREE.Vector2(touch.clientX, touch.clientY)
+        : undefined;
     event.preventDefault();
   };
 
   #onTouchEnd = (event: TouchEvent): void => {
     event.preventDefault();
+    const start = this.#touchStartClientPos;
+    this.#touchStartClientPos = undefined;
+    const touch = event.changedTouches[0];
+    if (
+      !start ||
+      !touch ||
+      event.touches.length !== 0 ||
+      start.distanceTo(tempVec2.set(touch.clientX, touch.clientY)) > TOUCH_TAP_DISTANCE
+    ) {
+      return;
+    }
+    const click = new MouseEvent("click", {
+      clientX: touch.clientX,
+      clientY: touch.clientY,
+      button: 0,
+    });
+    this.#updateCursorCoords(click);
+    this.emit("click", this.#cursorCoords, this.#worldSpaceCursorCoords, click);
   };
 
   #onTouchMove = (event: TouchEvent): void => {
     event.preventDefault();
+    const touch = event.touches[0];
+    if (
+      event.touches.length !== 1 ||
+      !touch ||
+      (this.#touchStartClientPos &&
+        this.#touchStartClientPos.distanceTo(tempVec2.set(touch.clientX, touch.clientY)) >
+          TOUCH_TAP_DISTANCE)
+    ) {
+      this.#touchStartClientPos = undefined;
+    }
   };
 
   #onTouchCancel = (event: TouchEvent): void => {
     event.preventDefault();
+    this.#touchStartClientPos = undefined;
   };
 
   #updateCursorCoords(event: MouseEvent): void {
