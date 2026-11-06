@@ -27,6 +27,8 @@ Android 首次启动采用 `android-app/default-layout.json` 中的 104 三维�
 
 跟踪画面代码来自 `backup/shierzhong-foxglove-20261105` 的 `5ddcccf`，对应十二中 `Foxglove－104 视觉案例.lnk` 实际 runtime。`android-app/vision/vision-reference.js` 保留其中 RGB、目标框与触屏选框实现，安卓适配使用同一 `/vision/demo/control`、结果话题和 ROS 参数服务，不依赖学校电脑在线。设置侧栏在安卓页面启动时保持收起。
 
+104 相机配套修复记录在 `android-app/vision/robot104-camera.patch`：Orbbec 驱动只启用 raw 图像发布插件，JPEG 继续由 `gemini_pro_rgb_jpeg` 独立进程发布。这样避免摄像头进程内 OpenCV JPEG 压缩调用 Jetson `libnvjpeg.so` 导致崩溃。现场原文件保留 `.before-android-vision-20261107-010804` 备份。
+
 ## 安全与限制
 
 - 这是测试签名 APK，不是商店发行包。签名每次重新构建可能改变，更新时可能需要卸载旧版，卸载会清除布局与连接设置。
