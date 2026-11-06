@@ -124,7 +124,7 @@ public final class MainActivity extends Activity {
     }
     private void showAndroidSettings() {
         new AlertDialog.Builder(this).setTitle("Android 设置")
-            .setItems(new String[]{"连接机器人", "重载界面", "显示/隐藏工具栏", "说明", "退出应用"}, (dialog, which) -> {
+            .setItems(new String[]{"连接机器人", "重载界面", "显示/隐藏工具栏", "说明", "退出应用", "机器人 Wi-Fi"}, (dialog, which) -> {
                 switch (which) {
                     case 0: connectionDialog(); break;
                     case 1: loadStudio(preferences.getString("bridge", DEFAULT_BRIDGE)); break;
@@ -136,6 +136,7 @@ public final class MainActivity extends Activity {
                         new AlertDialog.Builder(this).setTitle("退出应用？").setMessage("退出后机器人数据连接将中断。")
                             .setNegativeButton("取消", null).setPositiveButton("退出", (d, w) -> finish()).show();
                         break;
+                    case 5: startActivity(new Intent(this, RobotWifiActivity.class)); break;
                 }
             }).show();
     }
