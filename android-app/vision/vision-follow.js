@@ -61,6 +61,31 @@ function mount() {
     advertise(topic, schemaName) { advertise(topic, schemaName, schemaName === 'std_msgs/msg/String' ? 'string data' : 'uint32 x_offset\nuint32 y_offset\nuint32 height\nuint32 width\nbool do_rectify'); },
     unadvertise() {}, publish, callService };
   dispose = window.FoxgloveVision.initKcfPanel(context);
+  const picker = ui.panel.querySelector('[data-ui=kcfPicker]');
+  ui.stage.replaceChildren(picker);
+  const instructions = ui.panel.querySelector('[data-ui=kcfControls] > p');
+  const note = ui.panel.querySelector('[data-ui=kcfControls] > small');
+  const details = document.createElement('details');
+  details.innerHTML = '<summary>框选与距离说明</summary>';
+  if (instructions) details.append(instructions);
+  if (note) details.append(note);
+  ui.panel.querySelector('[data-ui=kcfControls]').append(details);
+  const startButton = ui.panel.querySelector('[data-ui=start]');
+  startButton.textContent = '开始跟踪';
+  const resize = () => {
+    const img = picker.querySelector('img');
+    const ratio = (img?.naturalWidth || 640) / (img?.naturalHeight || 480);
+    const width = Math.min(ui.stage.clientWidth, ui.stage.clientHeight * ratio);
+    picker.style.width = width + 'px';
+    picker.style.height = width / ratio + 'px';
+  };
+  const observer = new ResizeObserver(resize);
+  observer.observe(ui.stage);
+  const img = picker.querySelector('img');
+  img?.addEventListener('load', resize);
+  const cleanup = dispose;
+  dispose = () => { observer.disconnect(); img?.removeEventListener('load', resize); cleanup(); ui.stage.replaceChildren(); };
+  resize();
 }
 function connect() {
   channels.clear(); subscriptions.clear(); publishers.clear(); services.clear();

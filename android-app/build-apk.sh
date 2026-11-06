@@ -17,7 +17,7 @@ mkdir -p "$BUILD/classes" "$BUILD/generated" "$BUILD/dex" "$BUILD/out"
 "$TOOLS/aapt2" compile --dir "$APP/src/main/res" -o "$BUILD/resources.zip"
 "$TOOLS/aapt2" link -I "$ANDROID_JAR" --manifest "$APP/src/main/AndroidManifest.xml" \
   --java "$BUILD/generated" --min-sdk-version 26 --target-sdk-version 35 \
-  --version-code 11 --version-name "1.86.0-cn.8-android.11" \
+  --version-code 12 --version-name "1.86.0-cn.8-android.12" \
   -A "$APP/src/main/assets" -o "$BUILD/resources.apk" "$BUILD/resources.zip"
 find "$APP/src/main/java" "$BUILD/generated" -name '*.java' > "$BUILD/sources.txt"
 javac -encoding UTF-8 -source 8 -target 8 -Xlint:-options -classpath "$ANDROID_JAR" \
