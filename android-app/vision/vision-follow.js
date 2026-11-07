@@ -36,7 +36,7 @@ async function prepareCase(force=false){
  preparation=(async()=>{
   publish(CONTROL,{id:requestId,op:'start',case_id:caseId(),parameters:{enable_motion:'false'}});ui.feedback.textContent='正在准备识别…';
   const until=Date.now()+60000;
-  while(Date.now()<until){if(mode!==selected)throw Error('已切换跟随对象');if(!force&&runningCase===caseId()&&runningPhase==='RUNNING')return;await delay(400);}
+  while(Date.now()<until){if(mode!==selected)throw Error('已切换跟随对象');if(runningRequest===requestId&&runningCase===caseId()&&runningPhase==='RUNNING')return;await delay(400);}
   throw Error('识别启动超时，请重新选择');
  })();try{await preparation;}finally{preparation=undefined;}
 }
