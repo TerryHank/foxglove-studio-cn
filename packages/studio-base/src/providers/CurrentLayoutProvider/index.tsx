@@ -42,6 +42,12 @@ const log = Logger.getLogger(__filename);
 
 export const MAX_SUPPORTED_LAYOUT_VERSION = 1;
 
+const legacyAndroidPanelTitles = new Map([
+  ["104 三维地图与点云", "三维地图与点云"],
+  ["104 实时相机", "实时相机"],
+  ["104 电池电压 (V)", "电池电压 (V)"],
+]);
+
 /**
  * Concrete implementation of CurrentLayoutContext.Provider which handles
  * automatically restoring the current layout from LayoutStorage.
@@ -138,6 +144,22 @@ export default function CurrentLayoutProvider({ children }: React.PropsWithChild
 
   const setCurrentLayout = useCallback(
     (newLayout: SelectedLayout | undefined) => {
+      const data = newLayout?.data;
+      if (newLayout && data && navigator.userAgent.includes("FoxgloveAndroid")) {
+        let configById: typeof data.configById | undefined;
+        for (const [id, config] of Object.entries(data.configById)) {
+          const title = config.foxglovePanelTitle;
+          const replacement =
+            typeof title === "string" ? legacyAndroidPanelTitles.get(title) : undefined;
+          if (replacement != undefined) {
+            configById ??= { ...data.configById };
+            configById[id] = { ...config, foxglovePanelTitle: replacement };
+          }
+        }
+        if (configById) {
+          newLayout = { ...newLayout, data: { ...data, configById } };
+        }
+      }
       setLayoutState({
         sharedPanelState: {},
         selectedLayout: newLayout,

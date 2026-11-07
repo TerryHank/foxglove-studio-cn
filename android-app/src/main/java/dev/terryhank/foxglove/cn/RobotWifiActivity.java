@@ -43,7 +43,7 @@ public final class RobotWifiActivity extends Activity {
             return insets;
         });
         TextView title = new TextView(this);
-        title.setText("机器人 Wi-Fi · 104"); title.setTextSize(22);
+        title.setText("机器人 Wi-Fi"); title.setTextSize(22);
         root.addView(title);
         status = new TextView(this); status.setTextSize(16); status.setText("正在读取机器人网络状态…");
         root.addView(status);

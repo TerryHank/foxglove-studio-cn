@@ -4,14 +4,14 @@
       "topicPath": "/voltage.data",
       "expansion": "all",
       "fontSize": 18,
-      "foxglovePanelTitle": "104 电池电压 (V)",
+      "foxglovePanelTitle": "电池电压 (V)",
       "diffEnabled": false,
       "diffMethod": "custom",
       "diffTopicPath": "",
       "showFullMessageForDiff": false
     },
     "Image!camera104": {
-      "foxglovePanelTitle": "104 实时相机",
+      "foxglovePanelTitle": "实时相机",
       "imageMode": {
         "imageTopic": "/camera/color/image_raw/compressed",
         "synchronize": false
@@ -261,7 +261,7 @@
           "layerId": "foxglove.Urdf",
           "visible": true,
           "frameLocked": true,
-          "label": "104 OmniFleet T2 履带车",
+          "label": "OmniFleet T2 履带车",
           "instanceId": "robot104Visual",
           "sourceType": "url",
           "url": "data:application/xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIj8+DQo8cm9ib3QgbmFtZT0ib21uaWZsZWV0X3QyIj4NCiAgPG1hdGVyaWFsIG5hbWU9ImJvZHlfYmx1ZSI+PGNvbG9yIHJnYmE9IjAuMDggMC4yMiAwLjQyIDEuMCIvPjwvbWF0ZXJpYWw+DQogIDxtYXRlcmlhbCBuYW1lPSJ0cmFja19kYXJrIj48Y29sb3IgcmdiYT0iMC4wNiAwLjA2IDAuMDYgMS4wIi8+PC9tYXRlcmlhbD4NCiAgPG1hdGVyaWFsIG5hbWU9InNlbnNvcl9ncmF5Ij48Y29sb3IgcmdiYT0iMC4zNSAwLjM4IDAuNDIgMS4wIi8+PC9tYXRlcmlhbD4NCiAgPG1hdGVyaWFsIG5hbWU9ImNhbWVyYV9ibGFjayI+PGNvbG9yIHJnYmE9IjAuMDMgMC4wMyAwLjAzIDEuMCIvPjwvbWF0ZXJpYWw+DQoNCiAgPGxpbmsgbmFtZT0iYmFzZV9mb290cHJpbnQiLz4NCiAgPGxpbmsgbmFtZT0iYmFzZV9saW5rIj4NCiAgICA8dmlzdWFsPg0KICAgICAgPG9yaWdpbiB4eXo9IjAgMCAwIiBycHk9IjAgMCAwIi8+DQogICAgICA8Z2VvbWV0cnk+PGJveCBzaXplPSIwLjUwIDAuMjkgMC4wOCIvPjwvZ2VvbWV0cnk+DQogICAgICA8bWF0ZXJpYWwgbmFtZT0iYm9keV9ibHVlIi8+DQogICAgPC92aXN1YWw+DQogICAgPGNvbGxpc2lvbj4NCiAgICAgIDxvcmlnaW4geHl6PSIwIDAgMC4wOSIgcnB5PSIwIDAgMCIvPg0KICAgICAgPGdlb21ldHJ5Pjxib3ggc2l6ZT0iMC41MCAwLjM3IDAuMzMiLz48L2dlb21ldHJ5Pg0KICAgIDwvY29sbGlzaW9uPg0KICAgIDxpbmVydGlhbD4NCiAgICAgIDxvcmlnaW4geHl6PSIwIDAgMC4wOSIgcnB5PSIwIDAgMCIvPg0KICAgICAgPG1hc3MgdmFsdWU9IjEyLjAiLz4NCiAgICAgIDxpbmVydGlhIGl4eD0iMC4xNjAiIGl4eT0iMCIgaXh6PSIwIiBpeXk9IjAuMzU5IiBpeXo9IjAiIGl6ej0iMC4zODciLz4NCiAgICA8L2luZXJ0aWFsPg0KICA8L2xpbms+DQogIDxqb2ludCBuYW1lPSJiYXNlX2Zvb3RwcmludF9qb2ludCIgdHlwZT0iZml4ZWQiPg0KICAgIDxwYXJlbnQgbGluaz0iYmFzZV9saW5rIi8+DQogICAgPGNoaWxkIGxpbms9ImJhc2VfZm9vdHByaW50Ii8+DQogICAgPG9yaWdpbiB4eXo9IjAgMCAtMC4wNzUiIHJweT0iMCAwIDAiLz4NCiAgPC9qb2ludD4NCg0KICA8bGluayBuYW1lPSJsZWZ0X3RyYWNrX2xpbmsiPg0KICAgIDx2aXN1YWw+PGdlb21ldHJ5Pjxib3ggc2l6ZT0iMC41MCAwLjA0IDAuMDgiLz48L2dlb21ldHJ5PjxtYXRlcmlhbCBuYW1lPSJ0cmFja19kYXJrIi8+PC92aXN1YWw+DQogICAgPGNvbGxpc2lvbj48Z2VvbWV0cnk+PGJveCBzaXplPSIwLjUwIDAuMDQgMC4wOCIvPjwvZ2VvbWV0cnk+PC9jb2xsaXNpb24+DQogIDwvbGluaz4NCiAgPGpvaW50IG5hbWU9ImxlZnRfdHJhY2tfam9pbnQiIHR5cGU9ImZpeGVkIj4NCiAgICA8cGFyZW50IGxpbms9ImJhc2VfbGluayIvPg0KICAgIDxjaGlsZCBsaW5rPSJsZWZ0X3RyYWNrX2xpbmsiLz4NCiAgICA8b3JpZ2luIHh5ej0iMCAwLjE2NSAtMC4wMzUiIHJweT0iMCAwIDAiLz4NCiAgPC9qb2ludD4NCg0KICA8bGluayBuYW1lPSJyaWdodF90cmFja19saW5rIj4NCiAgICA8dmlzdWFsPjxnZW9tZXRyeT48Ym94IHNpemU9IjAuNTAgMC4wNCAwLjA4Ii8+PC9nZW9tZXRyeT48bWF0ZXJpYWwgbmFtZT0idHJhY2tfZGFyayIvPjwvdmlzdWFsPg0KICAgIDxjb2xsaXNpb24+PGdlb21ldHJ5Pjxib3ggc2l6ZT0iMC41MCAwLjA0IDAuMDgiLz48L2dlb21ldHJ5PjwvY29sbGlzaW9uPg0KICA8L2xpbms+DQogIDxqb2ludCBuYW1lPSJyaWdodF90cmFja19qb2ludCIgdHlwZT0iZml4ZWQiPg0KICAgIDxwYXJlbnQgbGluaz0iYmFzZV9saW5rIi8+DQogICAgPGNoaWxkIGxpbms9InJpZ2h0X3RyYWNrX2xpbmsiLz4NCiAgICA8b3JpZ2luIHh5ej0iMCAtMC4xNjUgLTAuMDM1IiBycHk9IjAgMCAwIi8+DQogIDwvam9pbnQ+DQoNCiAgPGxpbmsgbmFtZT0ic2Vuc29yX21hc3RfbGluayI+DQogICAgPHZpc3VhbD4NCiAgICAgIDxvcmlnaW4geHl6PSIwIDAgMC4wNTUiIHJweT0iMCAwIDAiLz4NCiAgICAgIDxnZW9tZXRyeT48Y3lsaW5kZXIgcmFkaXVzPSIwLjAxMiIgbGVuZ3RoPSIwLjExIi8+PC9nZW9tZXRyeT4NCiAgICAgIDxtYXRlcmlhbCBuYW1lPSJzZW5zb3JfZ3JheSIvPg0KICAgIDwvdmlzdWFsPg0KICA8L2xpbms+DQogIDxqb2ludCBuYW1lPSJzZW5zb3JfbWFzdF9qb2ludCIgdHlwZT0iZml4ZWQiPg0KICAgIDxwYXJlbnQgbGluaz0iYmFzZV9saW5rIi8+DQogICAgPGNoaWxkIGxpbms9InNlbnNvcl9tYXN0X2xpbmsiLz4NCiAgICA8b3JpZ2luIHh5ej0iMC4wMiAwIDAuMDQiIHJweT0iMCAwIDAiLz4NCiAgPC9qb2ludD4NCg0KICA8bGluayBuYW1lPSJyc2xpZGFyIj4NCiAgICA8dmlzdWFsPg0KICAgICAgPG9yaWdpbiB4eXo9IjAgMCAwLjAzIiBycHk9IjAgMCAwIi8+DQogICAgICA8Z2VvbWV0cnk+PGN5bGluZGVyIHJhZGl1cz0iMC4wNDUiIGxlbmd0aD0iMC4wNiIvPjwvZ2VvbWV0cnk+DQogICAgICA8bWF0ZXJpYWwgbmFtZT0ic2Vuc29yX2dyYXkiLz4NCiAgICA8L3Zpc3VhbD4NCiAgPC9saW5rPg0KICA8am9pbnQgbmFtZT0icnNsaWRhcl9qb2ludCIgdHlwZT0iZml4ZWQiPg0KICAgIDxwYXJlbnQgbGluaz0iYmFzZV9saW5rIi8+DQogICAgPGNoaWxkIGxpbms9InJzbGlkYXIiLz4NCiAgICA8b3JpZ2luIHh5ej0iLTAuMDQxIDAgMC4xNSIgcnB5PSIwIDAgMCIvPg0KICA8L2pvaW50Pg0KDQogIDxsaW5rIG5hbWU9ImltdV9saW5rIi8+DQogIDxqb2ludCBuYW1lPSJpbXVfam9pbnQiIHR5cGU9ImZpeGVkIj4NCiAgICA8cGFyZW50IGxpbms9ImJhc2VfbGluayIvPg0KICAgIDxjaGlsZCBsaW5rPSJpbXVfbGluayIvPg0KICAgIDxvcmlnaW4geHl6PSIwIDAgMCIgcnB5PSIwIDAgMCIvPg0KICA8L2pvaW50Pg0KDQogIDxsaW5rIG5hbWU9ImNhbWVyYV9saW5rIj4NCiAgICA8dmlzdWFsPg0KICAgICAgPGdlb21ldHJ5Pjxib3ggc2l6ZT0iMC4wNyAwLjAyNSAwLjAyOCIvPjwvZ2VvbWV0cnk+DQogICAgICA8bWF0ZXJpYWwgbmFtZT0iY2FtZXJhX2JsYWNrIi8+DQogICAgPC92aXN1YWw+DQogIDwvbGluaz4NCiAgPGpvaW50IG5hbWU9ImNhbWVyYV9qb2ludCIgdHlwZT0iZml4ZWQiPg0KICAgIDxwYXJlbnQgbGluaz0icnNsaWRhciIvPg0KICAgIDxjaGlsZCBsaW5rPSJjYW1lcmFfbGluayIvPg0KICAgIDxvcmlnaW4geHl6PSIwLjA1IDAgMCIgcnB5PSIwIDAgMCIvPg0KICA8L2pvaW50Pg0KPC9yb2JvdD4NCg==",
@@ -280,7 +280,7 @@
         "poseEstimateThetaDeviation": 0.26179939
       },
       "imageMode": {},
-      "foxglovePanelTitle": "104 三维地图与点云"
+      "foxglovePanelTitle": "三维地图与点云"
     }
   },
   "globalVariables": {},
