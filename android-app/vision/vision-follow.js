@@ -30,13 +30,14 @@ function callService(name,request){return new Promise((resolve,reject)=>{
  client.sendServiceCallRequest({serviceId:service.id,callId:id,encoding:'cdr',data:new DataView(data.buffer,data.byteOffset,data.byteLength)});
 });}
 async function prepareCase(force=false){
+ const expectedRevision=revision;
  if(!force&&runningCase===caseId()&&runningPhase==='RUNNING')return;
- if(preparation){try{await preparation;}catch{}return prepareCase(force);}
+ if(preparation){try{await preparation;}catch{}if(expectedRevision!==revision)throw Error('已切换跟随对象');return prepareCase(force);}
  const selected=mode,requestId=crypto.randomUUID();
  preparation=(async()=>{
   publish(CONTROL,{id:requestId,op:'start',case_id:caseId(),parameters:{enable_motion:'false'}});ui.feedback.textContent='正在准备识别…';
   const until=Date.now()+60000;
-  while(Date.now()<until){if(mode!==selected)throw Error('已切换跟随对象');if(runningRequest===requestId&&runningCase===caseId()&&runningPhase==='RUNNING')return;await delay(400);}
+  while(Date.now()<until){if(mode!==selected||expectedRevision!==revision)throw Error('已切换跟随对象');if(runningRequest===requestId&&runningCase===caseId()&&runningPhase==='RUNNING')return;await delay(400);}
   throw Error('识别启动超时，请重新选择');
  })();try{await preparation;}finally{preparation=undefined;}
 }
@@ -77,7 +78,7 @@ async function selectMode(value){
  if(motion&&previous!==value){try{await parameter('enable_motion',false,false);}catch(error){report(error);return;}}
  if(current!==revision)return;mode=value;editingDistance=false;mount();ui.targetName.textContent=titles[mode];
  document.querySelectorAll('[data-mode]').forEach(button=>button.setAttribute('aria-selected',String(button.dataset.mode===mode)));ui.targetOptions.hidden=true;ui.targetToggle.setAttribute('aria-expanded','false');
- try{publish(MOBILE,{op:'mode',mode:mode==='human'?'off':mode});await prepareCase(true);if(current!==revision)return;ui.feedback.textContent=mode==='human'?'点击人物框或竖起大拇指绑定':'点击识别框绑定跟随目标';}catch(error){report(error);}
+ try{publish(MOBILE,{op:'mode',mode:mode==='human'?'off':mode});await prepareCase(true);if(current!==revision)return;ui.feedback.textContent=mode==='human'?'点击人物框或竖起大拇指绑定':'点击识别框绑定跟随目标';}catch(error){if(current===revision)report(error);}
 }
 const RADIO_BRIDGE='ws://192.168.144.108:8765',WIFI_BRIDGE='ws://192.168.3.104:8765';let selectedBridge;
 async function connect(){
