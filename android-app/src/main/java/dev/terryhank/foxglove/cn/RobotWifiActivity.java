@@ -34,6 +34,7 @@ public final class RobotWifiActivity extends Activity {
         getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
+        root.setBackgroundColor(android.graphics.Color.rgb(21, 21, 26));
         root.setPadding(dp(16), dp(12), dp(16), dp(8));
         root.setFitsSystemWindows(true);
         root.setOnApplyWindowInsetsListener((view, insets) -> {

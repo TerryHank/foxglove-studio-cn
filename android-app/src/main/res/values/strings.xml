@@ -4,9 +4,14 @@
         <item name="android:fontFamily">sans</item>
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:windowActionModeOverlay">true</item>
-        <item name="android:colorAccent">#8D9BFF</item>
-        <item name="android:statusBarColor">#16191F</item>
-        <item name="android:navigationBarColor">#16191F</item>
-        <item name="android:windowBackground">#16191F</item>
+        <item name="android:colorAccent">#A78BFA</item>
+        <item name="android:statusBarColor">#15151A</item>
+        <item name="android:navigationBarColor">#15151A</item>
+        <item name="android:colorButtonNormal">#33333B</item>
+        <item name="android:colorControlNormal">#A99DC4</item>
+        <item name="android:textColorPrimary">#E1E1E4</item>
+        <item name="android:textColorSecondary">#ADADB5</item>
+        <item name="android:colorBackground">#15151A</item>
+        <item name="android:windowBackground">#15151A</item>
     </style>
 </resources>

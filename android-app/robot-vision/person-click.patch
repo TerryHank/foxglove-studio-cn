@@ -1,0 +1,62 @@
+--- a/body_adapter.py
++++ b/body_adapter.py
+@@ -70,12 +70,29 @@
+         self.state, self.track_id = 'IDLE', None
+         self.native = dict(state='INITING', track_id=0, serial_lost_num=0)
+         self.input_frames, self.command_at = 0, None
++        self.click_target, self.click_until, self.visible_ids = None, 0., set()
++        node.create_subscription(String, '/vision/person_follow/control', self.on_click, 10)
+         self.command = dict(linear_x=0., angular_z=0.)
+         self.input_pub = node.create_publisher(PerceptionTargets, '/vision/body_tracking/targets', 1)
+         node.create_subscription(String, '/vision/body_tracking/native_status', self.on_state, 1)
+         node.create_subscription(Twist, '/vision/body_tracking/cmd_vel', self.on_command, 1)
+         node.operator_message = '大拇指跟随、握拳停止；1前进、2后退'
+         node.goal_marker_pub.publish(MarkerArray(markers=[Marker(header=Header(frame_id=node.global_frame),action=Marker.DELETEALL)]))
++
++    def on_click(self, message):
++        try:
++            request = json.loads(message.data)
++            if request.get('op') != 'lock':
++                return
++            identity = int(request['track_id'])
++            with self.node.lock:
++                if identity not in self.visible_ids:
++                    self.node.operator_message = '人物已离开画面，请重新点击'
++                    return
++                self.click_target, self.click_until = identity, time.monotonic() + 1.5
++                self.node.operator_message = f'正在绑定人物 ID {identity}'
++        except (ValueError, TypeError, KeyError):
++            self.node.operator_message = '人物选择格式错误'
+ 
+     def on_state(self, message):
+         self.native = json.loads(message.data)
+@@ -115,7 +132,28 @@
+                     self.node.coordinate_error = 'Body target base transform: '+str(error)
+             prepared.append(item)
+         updated = getattr(getattr(self.node, 'perception', None), 'timings', {}).get('hand_updated', False)
+-        self.input_pub.publish(body_targets(prepared, header, hands, hand_updated=updated))
++        self.visible_ids = {int(track['id']) for track in prepared}
++        if any(hand.get('gesture') == 'fist' for hand in hands):
++            self.click_target = None
++        message = body_targets(prepared, header, hands, hand_updated=updated)
++        if self.click_target is not None and time.monotonic() < self.click_until:
++            # Explicit screen selection uses the native lock/unlock inputs for the same tracked ID.
++            owner = self.track_id if self.track_id is not None and self.track_id != self.click_target else self.click_target
++            code = 5 if owner != self.click_target else 11
++            track = next((item for item in prepared if item['id'] == owner), None)
++            if track is not None:
++                message.targets = [item for item in message.targets if item.type != 'hand']
++                x0, y0, x1, y1 = map(int, track['bbox'])
++                roi = Roi(type='hand', confidence=1.)
++                roi.rect.x_offset, roi.rect.y_offset = max(0, x0), max(0, y0)
++                roi.rect.width, roi.rect.height = max(1, x1-x0), max(1, y1-y0)
++                message.targets.append(Target(type='hand', track_id=owner, rois=[roi], attributes=[
++                    Attribute(type='gesture', value=float(code), confidence=1.),
++                    Attribute(type='body_track_id', value=float(owner), confidence=1.)]))
++            if self.track_id == self.click_target:
++                self.node.operator_message = f'已绑定人物 ID {self.click_target}'
++                self.click_target = None
++        self.input_pub.publish(message)
+         self.input_frames += 1
+ 
+     def tick(self):

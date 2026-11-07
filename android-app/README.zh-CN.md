@@ -31,7 +31,9 @@ Android 首次启动采用 `android-app/default-layout.json` 中的 104 三维�
 
 104 的位置点导航使用三维面板“发布点”工具。点选地图后，`/navigation/goal_point` 把位置交给车端导航，车端自动计算朝向。单指轻点可发送，拖动和双指手势用于调整视图。
 
-安卓“返回”菜单中的“视觉跟随演示”提供物体框选跟随和人体手势跟随。物体跟随使用 NanoTrack/KCF，触屏在 RGB 画面拖框指定目标，可切换底盘跟随和调节距离；人体跟随复用 104 的 C++ Body Tracking、深度控距和既有手势。启动模式沿用十二中案例：物体框选默认允许跟随，人体默认识别展示，可手动开启运动。状态与参数均从机器人读回。打开页面不自动启动案例；切回地图前可点“切回导航模式”恢复导航服务。
+视觉跟随采用 Foxglove 深灰/紫色配色，左侧页面内下拉列表直接切换四种识别：颜色（红绿蓝黄）、形状（矩形/圆形/三角形）、二维码（同帧 QR + tag36h11 AprilTag 全编号）、人体。前两类点击检测框绑定 NanoTrack 目标，二维码显示 QR 文本和 AprilTag 编号，也可点选跟踪；人体点击人物框或竖起大拇指绑定人物 ID，握拳解除，数字 1/2 前后移动。底盘运动仍由开启/关闭按钮控制，切换识别类型会准备新的识别实例并关闭运动。距离松开滑块或输入完成后直接应用并读回。
+
+104 新增识别服务 `omnifleet-mobile-vision.service`，源码及部署脚本位于 `android-app/robot-vision/`。在 104 上运行 `sudo python3 install.py`，会安装 `/opt/omnifleet-mobile-vision/`，对现有人体适配器应用 `person-click.patch`（备份原件），并在 Bridge 既有发布列表加入 `/vision/mobile/control`。服务默认不处理图像，App 选择颜色/形状/二维码模式时启用；跟随仍复用现有 NanoTrack、深度和 C++ 控制器。依赖机器人已有的 OpenCV aruco、pyzbar、rclpy、cv_bridge。测试脚本涵盖四色、三形状、同帧 QR/多个 AprilTag、人物 ID 点击和换人解绑流程；这些不代表现场行驶验收。
 
 跟踪画面代码来自 `backup/shierzhong-foxglove-20261105` 的 `5ddcccf`，对应十二中 `Foxglove－104 视觉案例.lnk` 实际 runtime。`android-app/vision/vision-reference.js` 保留其中 RGB、目标框与触屏选框实现，安卓适配使用同一 `/vision/demo/control`、结果话题和 ROS 参数服务，不依赖学校电脑在线。设置侧栏在安卓页面启动时保持收起。
 

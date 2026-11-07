@@ -36,7 +36,7 @@ public final class MainActivity extends Activity {
         }
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setBackgroundColor(Color.rgb(22, 25, 31));
+        root.setBackgroundColor(Color.rgb(21, 21, 26));
         root.setFitsSystemWindows(true);
         root.setOnApplyWindowInsetsListener((v, insets) -> {
             v.setPadding(insets.getSystemWindowInsetLeft(), insets.getSystemWindowInsetTop(),
