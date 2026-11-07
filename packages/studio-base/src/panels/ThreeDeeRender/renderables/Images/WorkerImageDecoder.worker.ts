@@ -15,7 +15,13 @@ function decode(image: RosImage | RawImage, options: Partial<RawImageOptions>): 
   return Comlink.transfer(result, [result.data.buffer]);
 }
 
+async function decodeBitmap(blob: Blob, resizeWidth?: number): Promise<ImageBitmap> {
+  const bitmap = await createImageBitmap(blob, { resizeWidth });
+  return Comlink.transfer(bitmap, [bitmap]);
+}
+
 export const service = {
   decode,
+  decodeBitmap,
 };
 Comlink.expose(service);

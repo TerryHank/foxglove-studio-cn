@@ -716,8 +716,7 @@ export class ImageMode
 
     renderable.userData.receiveTime = receiveTime;
     renderable.setImage(image, /*resizeWidth=*/ undefined, () => {
-      if (this.#fallbackCameraModelActive()) {
-        this.#updateFallbackCameraModel(renderable);
+      if (this.#fallbackCameraModelActive() && this.#updateFallbackCameraModel(renderable)) {
         this.#updateViewAndRenderables();
       }
     });
@@ -727,7 +726,7 @@ export class ImageMode
    * Will no-op if there is not a decodedImage on the renderable.
    * Be sure to call `#updateViewAndRenderables` after calling this method to update the camera and renderable.
    */
-  #updateFallbackCameraModel(renderable: ImageRenderable) {
+  #updateFallbackCameraModel(renderable: ImageRenderable): boolean {
     const decodedImage = renderable.getDecodedImage();
     const lastImageMessage = renderable.userData.image;
     // if we've already received an image, use it to create a fallback camera model
@@ -735,6 +734,14 @@ export class ImageMode
     if (decodedImage && lastImageMessage) {
       const frameId = getFrameIdFromImage(lastImageMessage);
       const { width, height } = decodedImage;
+      const previous = this.#cameraModel?.info;
+      if (
+        previous?.header.frame_id === frameId &&
+        previous.width === width &&
+        previous.height === height
+      ) {
+        return false;
+      }
       const cameraInfo = createFallbackCameraInfoForImage({
         frameId,
         height,
@@ -742,7 +749,9 @@ export class ImageMode
         focalLength: DEFAULT_FOCAL_LENGTH,
       });
       this.#updateCameraModel(cameraInfo);
+      return true;
     }
+    return false;
   }
 
   #fallbackCameraModelActive = (): boolean => {

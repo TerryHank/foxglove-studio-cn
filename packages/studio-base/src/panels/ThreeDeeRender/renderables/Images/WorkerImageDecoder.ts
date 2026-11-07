@@ -45,6 +45,10 @@ export class WorkerImageDecoder {
     return await this.#remote.decode(image, options);
   }
 
+  public async decodeBitmap(blob: Blob, resizeWidth?: number): Promise<ImageBitmap> {
+    return await this.#remote.decodeBitmap(blob, resizeWidth);
+  }
+
   public terminate(): void {
     this.#dispose();
   }

@@ -307,6 +307,10 @@ export class ImageRenderable extends Renderable<ImageUserData> {
     resizeWidth?: number,
   ): Promise<ImageBitmap | ImageData> {
     if ("format" in image) {
+      if (this.#latestCamera && typeof Worker !== "undefined") {
+        const blob = new Blob([image.data], { type: `image/${image.format}` });
+        return await (this.decoder ??= new WorkerImageDecoder()).decodeBitmap(blob, resizeWidth);
+      }
       return await decodeCompressedImageToBitmap(image, resizeWidth);
     }
     return await (this.decoder ??= new WorkerImageDecoder()).decode(image, this.userData.settings);
@@ -365,6 +369,7 @@ export class ImageRenderable extends Renderable<ImageUserData> {
       "Decoded image must be set before texture can be updated or created",
     );
     const decodedImage = this.#decodedImage;
+    const previousTexture = this.userData.texture;
     // Create or update the bitmap texture
     if (decodedImage instanceof ImageBitmap) {
       const canvasTexture = this.userData.texture;
@@ -405,7 +410,7 @@ export class ImageRenderable extends Renderable<ImageUserData> {
         dataTexture.needsUpdate = true;
       }
     }
-    this.#materialNeedsUpdate = true;
+    this.#materialNeedsUpdate ||= !this.#latestCamera || this.userData.texture !== previousTexture;
   }
 
   #updateMaterial(): void {
