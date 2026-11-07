@@ -6,6 +6,12 @@ FoxgloveClient.SUPPORTED_SUBPROTOCOL='foxglove.sdk.v1';
 const ui=Object.fromEntries([...document.querySelectorAll('[id]')].map(el=>[el.id,el]));
 const CONTROL='/vision/demo/control',STATUS='/vision/demo/status',MOBILE='/vision/mobile/control',DETECTIONS='/vision/mobile/detections',PERSON='/vision/person_follow/control',BODY='/vision/body_tracking/status',KCF='/omnifleet_vision/kcf/status',RGB='/camera/color/image_raw/compressed';
 const titles={color:'颜色识别与跟随',shape:'形状识别与跟随',codes:'二维码识别与跟随',human:'人体识别与跟随'};
+const modeHelp={
+ color:'🎨 勾选颜色，点色块框绑定。',
+ shape:'🔺 勾选形状，点形状框绑定。',
+ codes:'🔎 勾选 QR / AprilTag，点码框绑定。',
+ human:'👍 竖拇指或点人物框绑定。✊ 停止，1 前进，2 后退。',
+};
 const labels={red:'红色',green:'绿色',blue:'蓝色',yellow:'黄色',rectangle:'矩形',circle:'圆形',triangle:'三角形'};
 const filterLabels={color:['red','green','blue','yellow'],shape:['rectangle','circle','triangle'],codes:['QR','AprilTag']};
 const selectedFilters=Object.fromEntries(Object.entries(filterLabels).map(([key,items])=>[key,new Set(items)]));
@@ -140,6 +146,7 @@ async function selectMode(value){
  const previous=mode,current=++revision;
  if((motion||motionIntent?.enabled)&&previous!==value){try{await parameter('enable_motion',false,false);}catch(error){report(error);return;}}
  if(current!==revision)return;mode=value;editingDistance=false;mount();ui.targetName.textContent=titles[mode];
+ ui.modeHelp.textContent=modeHelp[mode];
  renderFilters();
  document.querySelectorAll('[data-mode]').forEach(button=>button.setAttribute('aria-selected',String(button.dataset.mode===mode)));
  try{sendFilters();await prepareCase(true);if(current!==revision)return;ui.feedback.textContent=mode==='human'?'点击人物框或竖起大拇指绑定':'点击识别框绑定跟随目标';}catch(error){if(current===revision)report(error);}
@@ -189,4 +196,4 @@ ui.toggleFollow.onclick=async()=>{
 };
 const applyDistance=()=>{const value=Number(ui.distanceValue.value);if(!ui.distanceValue.value||!ui.distanceValue.validity.valid){report('请输入 0.2–3.5 m 的距离');return;}parameter(mode==='human'?'follow_distance':'target_distance',value).then(()=>editingDistance=false).catch(report);};
 ui.distanceSlider.oninput=()=>{editingDistance=true;ui.distanceValue.value=ui.distanceSlider.value;};ui.distanceSlider.onchange=applyDistance;ui.distanceValue.oninput=()=>{editingDistance=true;ui.distanceSlider.value=ui.distanceValue.value;};ui.distanceValue.onchange=applyDistance;ui.distanceValue.onkeydown=event=>{if(event.key==='Enter'){event.preventDefault();ui.distanceValue.blur();}};
-window.addEventListener('pagehide',()=>{closed=true;socket?.close();});renderFilters();mount();connect();
+window.addEventListener('pagehide',()=>{closed=true;socket?.close();});ui.modeHelp.textContent=modeHelp[mode];renderFilters();mount();connect();
