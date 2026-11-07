@@ -36,7 +36,7 @@
          updated = getattr(getattr(self.node, 'perception', None), 'timings', {}).get('hand_updated', False)
 -        self.input_pub.publish(body_targets(prepared, header, hands, hand_updated=updated))
 +        self.visible_ids = {int(track['id']) for track in prepared}
-+        if any(hand.get('gesture') == 'fist' for hand in hands):
++        if any(hand.get('gesture') == 'fist' and hand.get('owner') in (self.track_id, self.click_target) for hand in hands):
 +            self.click_target = None
 +        message = body_targets(prepared, header, hands, hand_updated=updated)
 +        if self.click_target is not None and time.monotonic() < self.click_until:
