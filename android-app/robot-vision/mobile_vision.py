@@ -46,7 +46,6 @@ class MobileVision(Node):
                 self.latest = message
 
     def publish_state(self):
-        self.published_state = (self.session_id, self.tracking_state)
         remaining = (max(0., REACQUIRE_SECONDS - (time.monotonic() - self.last_seen))
                      if self.tracking_state == 'searching' else None)
         self.status.publish(String(data=json.dumps({
@@ -91,6 +90,7 @@ class MobileVision(Node):
                 return
             self.source_stamp = stamp
             now = time.monotonic()
+            previous_state = self.tracking_state
             if now - self.last_seen >= REACQUIRE_SECONDS:
                 self.cancel()
             elif payload.get('tracks'):
@@ -98,7 +98,7 @@ class MobileVision(Node):
                 self.tracking_state = 'tracking'
             elif self.tracking_state != 'locking':
                 self.tracking_state = 'searching'
-            if self.published_state != (self.session_id, self.tracking_state):
+            if previous_state != self.tracking_state:
                 self.publish_state()
         except (ValueError, KeyError, TypeError) as error:
             self.get_logger().warning(f'Invalid tracker status: {error}', throttle_duration_sec=5.)

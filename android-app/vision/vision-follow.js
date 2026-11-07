@@ -123,7 +123,7 @@ async function parameter(name,value,prepare=true){
 function draw(){
  if(!canvas)return;
  const pen=canvas.getContext('2d');pen.clearRect(0,0,canvas.width,canvas.height);
- const items=sessionId?(lockedTrack&&Date.now()-trackedAt<=1500?[lockedTrack]:[])
+ const items=!synchronized?[]:sessionId?(lockedTrack&&Date.now()-trackedAt<=1500?[lockedTrack]:[])
   :Date.now()-detectedAt<=1500?visibleDetections():[];
  const sx=canvas.width/frameSize[0],sy=canvas.height/frameSize[1];pen.font='15px sans-serif';pen.lineWidth=2;
  for(const item of items){const[x,y,w,h]=item.bbox,text=labels[item.label]||item.label;pen.strokeStyle=item.selected?'#79d6aa':'#b19aef';pen.strokeRect(x*sx,y*sy,w*sx,h*sy);
@@ -188,7 +188,8 @@ function applyMobileState(state){
  }
  const target=state.target;
  selectedLabel=target?(labels[target.label]||target.label)+(target.text?' '+target.text:''):'';
- ui.modeHelp.textContent=sessionId?'点画面空白处取消跟踪。':modeHelp[mode];
+ const help=sessionId?'点画面空白处取消跟踪。':modeHelp[mode];
+ if(ui.modeHelp.textContent!==help)ui.modeHelp.textContent=help;
  if(state.tracking_state==='searching'){
   lockedTrack=undefined;
   ui.feedback.textContent=`正在找回 ${selectedLabel} · 剩余 ${Math.ceil(state.remaining_s)} 秒`;
@@ -220,6 +221,7 @@ async function synchronize(attempt){
  if(!connected||socket!==attempt)return;
  synchronized=true;
  if(!sessionId)ui.feedback.textContent=mode==='human'?'点击人物框或竖起大拇指绑定':'点击识别框绑定跟随目标';
+ draw();
 }
 const RADIO_BRIDGE='ws://192.168.144.108:8765',WIFI_BRIDGE='ws://192.168.3.104:8765';
 const requested=new URLSearchParams(location.search).get('bridge')||RADIO_BRIDGE;
@@ -268,7 +270,7 @@ function connect(){
     lockedTrack=state.tracks?.length?{bbox:state.tracks[0].bbox,label:selectedLabel,selected:true}:undefined;
     trackedAt=Date.now();
    }else lockedTrack=undefined;
-   if(lockedTrack)ui.feedback.textContent=`已锁定 ${selectedLabel} · ${state.depth_m==null?'等待读取距离':Number(state.depth_m).toFixed(2)+' m'} · ${motion?'底盘已开启':'底盘已关闭'}`;
+   if(synchronized&&lockedTrack)ui.feedback.textContent=`已锁定 ${selectedLabel} · ${state.depth_m==null?'等待读取距离':Number(state.depth_m).toFixed(2)+' m'} · ${motion?'底盘已开启':'底盘已关闭'}`;
   }
   context.onRender?.({currentFrame:[{topic:channel.topic,message}]},()=>{});draw();
  }catch(error){report(error);}});
