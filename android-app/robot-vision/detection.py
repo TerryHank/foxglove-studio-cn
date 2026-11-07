@@ -15,6 +15,25 @@ def contours(mask, image_area):
     return [c for c in found if 180 <= cv2.contourArea(c) <= image_area * .75]
 
 
+def circle_bbox(cx, cy, radius, width, height):
+    x0, y0 = max(0, round(cx-radius)), max(0, round(cy-radius))
+    x1, y1 = min(width, round(cx+radius)), min(height, round(cy+radius))
+    return [x0, y0, x1-x0, y1-y0]
+
+
+def circles_from_image(gray):
+    # Search arcs directly, including when the target outline touches the background.
+    height, width = gray.shape
+    if min(width, height) < 16:
+        return
+    reduced = cv2.resize(gray, None, fx=.5, fy=.5, interpolation=cv2.INTER_AREA)
+    circles = cv2.HoughCircles(reduced, cv2.HOUGH_GRADIENT_ALT, 1.2, 9, param1=200,
+                               param2=.92, minRadius=4, maxRadius=min(reduced.shape)//2)
+    if circles is not None:
+        for cx, cy, radius in circles[0] * 2:
+            yield {'label': 'circle', 'bbox': circle_bbox(cx, cy, radius, width, height)}
+
+
 def detect_shapes(image, labels):
     gray = cv2.GaussianBlur(cv2.cvtColor(image, cv2.COLOR_BGR2GRAY), (5, 5), 0)
     edges = cv2.Canny(gray, 60, 150)
@@ -22,8 +41,18 @@ def detect_shapes(image, labels):
         # A colored face can have a strong color edge and a weak grayscale edge.
         color_edges = cv2.Canny(cv2.GaussianBlur(image, (5, 5), 0), 60, 150)
         yield from shapes_from_edges(gray, edges | color_edges, {'rectangle'}, 7, cv2.RETR_TREE)
-    if labels - {'rectangle'}:
-        yield from shapes_from_edges(gray, edges, labels - {'rectangle'}, 3, cv2.RETR_EXTERNAL)
+    other_labels = labels - {'rectangle'}
+    if other_labels:
+        circles = list(circles_from_image(gray)) if 'circle' in labels else []
+        yield from circles
+        for item in shapes_from_edges(gray, edges, other_labels, 3, cv2.RETR_EXTERNAL):
+            if item['label'] == 'circle':
+                # Keep the contour-based pass for small targets and merge duplicate rings.
+                x, y, w, h = item['bbox']
+                if any(math.hypot(x+w/2-a-c/2, y+h/2-b-d/2) <= min(w, h, c, d)/4
+                       for a, b, c, d in (circle['bbox'] for circle in circles)):
+                    continue
+            yield item
 
 
 def shapes_from_edges(gray, edges, labels, close_size, retrieval):
@@ -57,9 +86,7 @@ def shapes_from_edges(gray, edges, labels, close_size, retrieval):
                                        maxRadius=int(radius * 1.2))
             if circles is not None:
                 cx, cy, r = circles[0, 0]
-                x0, y0 = max(0, round(left+cx-r)), max(0, round(top+cy-r))
-                x1, y1 = min(width, round(left+cx+r)), min(height, round(top+cy+r))
-                yield {'label': 'circle', 'bbox': [x0, y0, x1-x0, y1-y0]}
+                yield {'label': 'circle', 'bbox': circle_bbox(left+cx, top+cy, r, width, height)}
             continue
 
         label = {3: 'triangle', 4: 'rectangle'}.get(len(poly))

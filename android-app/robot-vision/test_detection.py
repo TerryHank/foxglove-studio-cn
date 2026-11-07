@@ -40,6 +40,17 @@ class DetectionTests(unittest.TestCase):
         for actual, expected in zip(found[0]['bbox'], (130, 100, 110, 100)):
             self.assertAlmostEqual(actual, expected, delta=5)
 
+    def test_circle_touching_background_edge(self):
+        image = np.full((300, 400, 3), 235, np.uint8)
+        cv2.circle(image, (248, 150), 50, (45, 45, 45), -1, cv2.LINE_AA)
+        cv2.line(image, (70, 199), (330, 199), (45, 45, 45), 3)
+        cv2.line(image, (70, 199), (70, 260), (45, 45, 45), 3)
+
+        found = detect(image, 'shape', ['circle'])
+        self.assertEqual(len(found), 1)
+        for actual, expected in zip(found[0]['bbox'], (198, 100, 100, 100)):
+            self.assertAlmostEqual(actual, expected, delta=6)
+
     def test_qr_and_multiple_apriltags_in_same_frame(self):
         image = np.full((400, 900, 3), 255, np.uint8)
         qr = cv2.QRCodeEncoder_create().encode('robot104://demo')
