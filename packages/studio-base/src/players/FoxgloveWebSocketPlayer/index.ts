@@ -194,6 +194,7 @@ export default class FoxgloveWebSocketPlayer implements Player {
       throw new Error(`Attempted to open a second Foxglove WebSocket connection`);
     }
     log.info(`Opening connection to ${this.#url}`);
+    let opened = false;
 
     // Set a timeout to abort the connection if we are still not connected by then.
     // This will abort hanging connection attempts that can for whatever reason not
@@ -202,7 +203,7 @@ export default class FoxgloveWebSocketPlayer implements Player {
       () => {
         this.#client?.close();
       },
-      this.#androidAutoLink && this.#url === ANDROID_WIFI_BRIDGE ? 1200 : 10000,
+      this.#androidAutoLink && this.#url === ANDROID_WIFI_BRIDGE ? 3000 : 10000,
     );
 
     this.#client = new FoxgloveClient({
@@ -219,6 +220,7 @@ export default class FoxgloveWebSocketPlayer implements Player {
       if (this.#connectionAttemptTimeout != undefined) {
         clearTimeout(this.#connectionAttemptTimeout);
       }
+      opened = true;
       if (this.#androidAutoLink) {
         console.info(`RGB_LINK ${this.#url}`);
       }
@@ -296,7 +298,7 @@ export default class FoxgloveWebSocketPlayer implements Player {
       });
 
       this.#emitState();
-      if (this.#androidAutoLink) {
+      if (this.#androidAutoLink && (!opened || this.#url === ANDROID_RADIO_BRIDGE)) {
         this.#url = this.#url === ANDROID_WIFI_BRIDGE ? ANDROID_RADIO_BRIDGE : ANDROID_WIFI_BRIDGE;
       }
       this.#openTimeout = setTimeout(this.#open, this.#androidAutoLink ? 400 : 3000);

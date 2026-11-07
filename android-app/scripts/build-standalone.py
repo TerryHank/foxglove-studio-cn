@@ -19,9 +19,9 @@ variants = [
     ('follow', '视觉跟随', 'VisionFollowActivity', '#7864C4', 'M20,44V24H40V32H28V44ZM68,24H88V44H80V32H68ZM20,64H28V76H40V84H20ZM80,64H88V84H68V76H80ZM54,38A16,16 0,1 0,54 70A16,16 0,1 0,54 38'),
 ]
 versions = {
-    'navigation': ('4', '1.3-low-latency'),
+    'navigation': ('5', '1.3.1-low-latency'),
     'wifi': ('3', '1.2-foxglove-theme'),
-    'follow': ('7', '1.6-low-latency'),
+    'follow': ('8', '1.6.1-low-latency'),
 }
 def run(*args, **kwargs):
     return subprocess.run([str(a) for a in args], check=True, **kwargs)

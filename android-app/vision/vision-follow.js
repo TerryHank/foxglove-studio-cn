@@ -86,7 +86,7 @@ const autoLink=requested===RADIO_BRIDGE;
 let selectedBridge=autoLink?WIFI_BRIDGE:requested;
 function connect(){
  if(closed)return;channels.clear();subscriptions.clear();publishers.clear();services.clear();socket=new WebSocket(selectedBridge,'foxglove.sdk.v1');client=new FoxgloveClient({ws:socket});
- const attempt=socket,timer=setTimeout(()=>attempt.close(),autoLink&&selectedBridge===WIFI_BRIDGE?1200:10000);
+ const attempt=socket,timer=setTimeout(()=>attempt.close(),autoLink&&selectedBridge===WIFI_BRIDGE?3000:10000);
  client.on('open',()=>{clearTimeout(timer);if(closed)return;connected=true;window.__followLink=selectedBridge;[CONTROL,MOBILE,PERSON].forEach(advertise);ui.feedback.textContent='已连接，正在准备识别…';selectMode(mode);});
  client.on('advertise',items=>{items.forEach(item=>channels.set(item.id,item));subscribe();});
  client.on('unadvertise',ids=>{for(const id of ids){channels.delete(id);for(const[sub,item]of subscriptions)if(item.id===id)subscriptions.delete(sub);}});
@@ -108,7 +108,7 @@ function connect(){
   context.onRender?.({currentFrame:[{topic:channel.topic,message}]},()=>{});draw();
  }catch(error){report(error);}});
  client.on('status',status=>{if(status.level>0)report(status.message);});client.on('error',()=>report('连接机器人失败'));
- client.on('close',()=>{clearTimeout(timer);connected=false;report('连接中断，正在重连…');if(autoLink)selectedBridge=selectedBridge===WIFI_BRIDGE?RADIO_BRIDGE:WIFI_BRIDGE;for(const call of calls.values()){clearTimeout(call.timer);call.reject(Error('连接已断开'));}calls.clear();if(!closed)setTimeout(connect,autoLink?400:2000);});
+ client.on('close',()=>{clearTimeout(timer);if(autoLink&&(!connected||selectedBridge===RADIO_BRIDGE))selectedBridge=selectedBridge===WIFI_BRIDGE?RADIO_BRIDGE:WIFI_BRIDGE;connected=false;report('连接中断，正在重连…');for(const call of calls.values()){clearTimeout(call.timer);call.reject(Error('连接已断开'));}calls.clear();if(!closed)setTimeout(connect,autoLink?400:2000);});
 }
 ui.targetToggle.onclick=()=>{ui.targetOptions.hidden=!ui.targetOptions.hidden;ui.targetToggle.setAttribute('aria-expanded',String(!ui.targetOptions.hidden));};document.querySelectorAll('[data-mode]').forEach(button=>button.onclick=()=>selectMode(button.dataset.mode));
 ui.enableFollow.onclick=()=>parameter('enable_motion',true).catch(report);ui.disableFollow.onclick=()=>{revision++;parameter('enable_motion',false,false).catch(report);};
