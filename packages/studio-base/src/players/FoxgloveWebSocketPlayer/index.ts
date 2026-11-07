@@ -95,11 +95,14 @@ type MessageDefinitionMap = Map<string, MessageDefinition>;
  * 400MB
  */
 const CURRENT_FRAME_MAXIMUM_SIZE_BYTES = 400 * 1024 * 1024;
+const ANDROID_RADIO_BRIDGE = "ws://192.168.144.108:8765";
+const ANDROID_WIFI_BRIDGE = "ws://192.168.3.104:8765";
 
 export default class FoxgloveWebSocketPlayer implements Player {
   readonly #sourceId: string;
 
   #url: string; // WebSocket URL.
+  readonly #androidAutoLink: boolean;
   #name: string;
   #client?: FoxgloveClient; // The client when we're connected.
   #id: string = uuidv4(); // Unique ID for this player session.
@@ -169,13 +172,16 @@ export default class FoxgloveWebSocketPlayer implements Player {
     sourceId: string;
   }) {
     this.#metricsCollector = metricsCollector;
-    this.#url = url;
+    this.#androidAutoLink =
+      url === ANDROID_RADIO_BRIDGE &&
+      globalThis.navigator?.userAgent.includes(" FoxgloveAndroid") === true;
+    this.#url = this.#androidAutoLink ? ANDROID_WIFI_BRIDGE : url;
     this.#name = url;
     this.#metricsCollector.playerConstructed();
     this.#sourceId = sourceId;
     this.#urlState = {
       sourceId: this.#sourceId,
-      parameters: { url: this.#url },
+      parameters: { url },
     };
     this.#open();
   }
@@ -192,9 +198,12 @@ export default class FoxgloveWebSocketPlayer implements Player {
     // Set a timeout to abort the connection if we are still not connected by then.
     // This will abort hanging connection attempts that can for whatever reason not
     // establish a connection with the server.
-    this.#connectionAttemptTimeout = setTimeout(() => {
-      this.#client?.close();
-    }, 10000);
+    this.#connectionAttemptTimeout = setTimeout(
+      () => {
+        this.#client?.close();
+      },
+      this.#androidAutoLink && this.#url === ANDROID_WIFI_BRIDGE ? 1200 : 10000,
+    );
 
     this.#client = new FoxgloveClient({
       ws:
@@ -209,6 +218,9 @@ export default class FoxgloveWebSocketPlayer implements Player {
       }
       if (this.#connectionAttemptTimeout != undefined) {
         clearTimeout(this.#connectionAttemptTimeout);
+      }
+      if (this.#androidAutoLink) {
+        console.info(`RGB_LINK ${this.#url}`);
       }
       this.#presence = PlayerPresence.PRESENT;
       this.#resetSessionState();
@@ -271,6 +283,9 @@ export default class FoxgloveWebSocketPlayer implements Player {
 
       this.#client?.close();
       this.#client = undefined;
+      if (this.#closed) {
+        return;
+      }
 
       this.#problems.addProblem("ws:connection-failed", {
         severity: "error",
@@ -281,7 +296,10 @@ export default class FoxgloveWebSocketPlayer implements Player {
       });
 
       this.#emitState();
-      this.#openTimeout = setTimeout(this.#open, 3000);
+      if (this.#androidAutoLink) {
+        this.#url = this.#url === ANDROID_WIFI_BRIDGE ? ANDROID_RADIO_BRIDGE : ANDROID_WIFI_BRIDGE;
+      }
+      this.#openTimeout = setTimeout(this.#open, this.#androidAutoLink ? 400 : 3000);
     });
 
     this.#client.on("serverInfo", (event) => {

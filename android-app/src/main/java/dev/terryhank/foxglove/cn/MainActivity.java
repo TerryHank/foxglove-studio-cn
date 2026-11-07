@@ -88,6 +88,13 @@ public final class MainActivity extends Activity {
             }
         });
         web.setWebChromeClient(new WebChromeClient() {
+            @Override public boolean onConsoleMessage(ConsoleMessage message) {
+                if (message.message().startsWith("RGB_TIMING ") || message.message().startsWith("RGB_LINK ")) {
+                    android.util.Log.i("RGB_LATENCY", message.message());
+                    return true;
+                }
+                return super.onConsoleMessage(message);
+            }
             @Override public void onProgressChanged(WebView view, int p) {
                 progress.setProgress(p);
                 progress.setVisibility(p == 100 ? View.GONE : View.VISIBLE);

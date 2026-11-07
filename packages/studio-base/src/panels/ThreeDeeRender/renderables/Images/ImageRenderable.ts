@@ -16,13 +16,20 @@ import { WorkerImageDecoder } from "@foxglove/studio-base/panels/ThreeDeeRender/
 import { projectPixel } from "@foxglove/studio-base/panels/ThreeDeeRender/renderables/projections";
 import { RosValue } from "@foxglove/studio-base/players/types";
 
-import { AnyImage } from "./ImageTypes";
+import { AnyImage, getTimestampFromImage } from "./ImageTypes";
 import { decodeCompressedImageToBitmap } from "./decodeImage";
 import { CameraInfo } from "../../ros";
 import { DECODE_IMAGE_ERR_KEY, IMAGE_TOPIC_PATH } from "../ImageMode/constants";
 import { ColorModeSettings } from "../colorMode";
 
 const log = Logger.getLogger(__filename);
+const frameNow = () => performance.timeOrigin + performance.now();
+type CameraFrame = {
+  image: AnyImage;
+  resizeWidth?: number;
+  onDecoded?: () => void;
+  received: number;
+};
 export interface ImageRenderableSettings extends Partial<ColorModeSettings> {
   visible: boolean;
   frameLocked?: boolean;
@@ -75,11 +82,20 @@ export class ImageRenderable extends Renderable<ImageUserData> {
   #receivedImageSequenceNumber = 0;
   #displayedImageSequenceNumber = 0;
   #showingErrorImage = false;
+  readonly #latestCamera: boolean;
+  #pendingCamera?: CameraFrame;
+  #decodingCamera = false;
+  #cameraTiming?: number[];
+  #cameraTimingFrame?: number;
+  #cameraTimingRows: number[][] = [];
 
   #disposed = false;
 
   public constructor(topicName: string, renderer: IRenderer, userData: ImageUserData) {
     super(topicName, renderer, userData);
+    this.#latestCamera =
+      userData.topic === "/camera/color/image_raw/compressed" &&
+      globalThis.navigator?.userAgent.includes(" FoxgloveAndroid") === true;
   }
 
   protected isDisposed(): boolean {
@@ -92,6 +108,13 @@ export class ImageRenderable extends Renderable<ImageUserData> {
 
   public override dispose(): void {
     this.#disposed = true;
+    this.#pendingCamera = undefined;
+    if (this.#cameraTimingFrame != undefined) {
+      cancelAnimationFrame(this.#cameraTimingFrame);
+    }
+    if (this.#latestCamera && this.#decodedImage instanceof ImageBitmap) {
+      this.#decodedImage.close();
+    }
     this.userData.texture?.dispose();
     this.userData.material?.dispose();
     this.userData.geometry?.dispose();
@@ -173,20 +196,51 @@ export class ImageRenderable extends Renderable<ImageUserData> {
   }
 
   public setImage(image: AnyImage, resizeWidth?: number, onDecoded?: () => void): void {
+    if (this.#latestCamera) {
+      this.#pendingCamera = { image, resizeWidth, onDecoded, received: frameNow() };
+      void this.#decodeLatestCamera();
+      return;
+    }
+    void this.#decode(image, resizeWidth, onDecoded);
+  }
+
+  async #decodeLatestCamera(): Promise<void> {
+    if (this.#decodingCamera || this.#disposed || !this.#pendingCamera) {
+      return;
+    }
+    const { image, resizeWidth, onDecoded, received } = this.#pendingCamera;
+    this.#pendingCamera = undefined;
+    this.#decodingCamera = true;
+    try {
+      await this.#decode(image, resizeWidth, onDecoded, received);
+    } finally {
+      this.#decodingCamera = false;
+      void this.#decodeLatestCamera();
+    }
+  }
+
+  #decode(
+    image: AnyImage,
+    resizeWidth?: number,
+    onDecoded?: () => void,
+    received?: number,
+  ): Promise<void> {
     this.userData.image = image;
 
     const seq = ++this.#receivedImageSequenceNumber;
+    const started = received != undefined ? frameNow() : 0;
     const decodePromise = this.decodeImage(image, resizeWidth);
 
-    decodePromise
+    return decodePromise
       .then((result) => {
-        if (this.isDisposed()) {
-          return;
-        }
         // prevent displaying an image older than the one currently displayed
-        if (this.#displayedImageSequenceNumber > seq) {
+        if (this.isDisposed() || this.#displayedImageSequenceNumber > seq) {
+          if (this.#latestCamera && result instanceof ImageBitmap) {
+            result.close();
+          }
           return;
         }
+        const decoded = received != undefined ? frameNow() : 0;
         this.#displayedImageSequenceNumber = seq;
         this.#decodedImage = result;
         this.#textureNeedsUpdate = true;
@@ -196,6 +250,11 @@ export class ImageRenderable extends Renderable<ImageUserData> {
         onDecoded?.();
         this.removeError(DECODE_IMAGE_ERR_KEY);
         this.renderer.queueAnimationFrame();
+        if (received != undefined) {
+          const stamp = getTimestampFromImage(image);
+          this.#cameraTiming = [stamp.sec * 1e3 + stamp.nsec * 1e-6, received, started, decoded];
+          this.#cameraTimingFrame ??= requestAnimationFrame(this.#recordCameraFrame);
+        }
       })
       .catch((err) => {
         log.error(err);
@@ -209,6 +268,22 @@ export class ImageRenderable extends Renderable<ImageUserData> {
         this.addError(DECODE_IMAGE_ERR_KEY, `Error decoding image: ${err.message}`);
       });
   }
+
+  #recordCameraFrame = (): void => {
+    this.#cameraTimingFrame = undefined;
+    if (this.#cameraTiming && !this.#disposed) {
+      this.#cameraTimingRows.push(
+        [...this.#cameraTiming, frameNow()].map((n) => Number(n.toFixed(3))),
+      );
+      this.#cameraTiming = undefined;
+      if (this.#cameraTimingRows.length === 20) {
+        console.info(
+          "RGB_TIMING " + JSON.stringify({ mode: "navigation", rows: this.#cameraTimingRows }),
+        );
+        this.#cameraTimingRows = [];
+      }
+    }
+  };
 
   async #setErrorImage(seq: number, onDecoded?: () => void): Promise<void> {
     const errorBitmap = await getErrorImage(64, 64);
@@ -306,8 +381,12 @@ export class ImageRenderable extends Renderable<ImageUserData> {
         canvasTexture?.dispose();
         this.userData.texture = createCanvasTexture(decodedImage);
       } else {
+        const oldBitmap = canvasTexture.image as ImageBitmap;
         canvasTexture.image = decodedImage;
         canvasTexture.needsUpdate = true;
+        if (this.#latestCamera && oldBitmap !== decodedImage) {
+          oldBitmap.close();
+        }
       }
     } else {
       let dataTexture = this.userData.texture;

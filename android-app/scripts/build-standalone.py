@@ -18,6 +18,11 @@ variants = [
     ('wifi', '机器人 Wi-Fi', 'RobotWifiActivity', '#7864C4', 'M18,40Q54,10 90,40L82,50Q54,28 26,50ZM32,58Q54,40 76,58L67,68Q54,58 41,68ZM46,78A8,8 0,1 0,62 78A8,8 0,1 0,46 78'),
     ('follow', '视觉跟随', 'VisionFollowActivity', '#7864C4', 'M20,44V24H40V32H28V44ZM68,24H88V44H80V32H68ZM20,64H28V76H40V84H20ZM80,64H88V84H68V76H80ZM54,38A16,16 0,1 0,54 70A16,16 0,1 0,54 38'),
 ]
+versions = {
+    'navigation': ('4', '1.3-low-latency'),
+    'wifi': ('3', '1.2-foxglove-theme'),
+    'follow': ('7', '1.6-low-latency'),
+}
 def run(*args, **kwargs):
     return subprocess.run([str(a) for a in args], check=True, **kwargs)
 
@@ -49,7 +54,7 @@ for name, label, activity, color, symbol in variants:
     run(tools / 'aapt2', 'compile', '--dir', stage / 'res', '-o', stage / 'resources.zip')
     run(tools / 'aapt2', 'link', '-I', android, '--manifest', manifest, '--java', stage / 'generated',
         '--custom-package', namespace, '--min-sdk-version', '26', '--target-sdk-version', '35',
-        '--version-code', '6' if name == 'follow' else '3', '--version-name', '1.5-recognition-follow' if name == 'follow' else '1.2-foxglove-theme', '-A', stage / 'assets',
+        '--version-code', versions[name][0], '--version-name', versions[name][1], '-A', stage / 'assets',
         '-o', stage / 'resources.apk', stage / 'resources.zip')
     sources = list(java.glob('*.java')) if name == 'navigation' else [java / (activity + '.java')]
     if name == 'follow': sources.append(java / 'LocalAssetServer.java')

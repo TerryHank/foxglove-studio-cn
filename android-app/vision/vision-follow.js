@@ -62,7 +62,7 @@ function mount(){
  context={initialState:{caseId:caseId()},panelElement:ui.panel,watch(){},subscribe(){},advertise(){},unadvertise(){},publish(){},callService};
  const dispose=window.FoxgloveVision.initKcfPanel(context);picker=ui.panel.querySelector('[data-ui=kcfPicker]');ui.stage.replaceChildren(picker);canvas=picker.querySelector('[data-ui=kcfCanvas]');preview=picker.querySelector('[data-ui=kcfPreview]');canvas.style.pointerEvents='auto';
  const resize=()=>{const ratio=(preview.naturalWidth||640)/(preview.naturalHeight||480),width=Math.min(ui.stage.clientWidth,ui.stage.clientHeight*ratio);picker.style.width=width+'px';picker.style.height=width/ratio+'px';};
- const observer=new ResizeObserver(resize);observer.observe(ui.stage);const frame=()=>{resize();draw();};preview.addEventListener('rgb-frame',frame);
+ const observer=new ResizeObserver(resize);observer.observe(ui.stage);preview.addEventListener('load',resize);preview.addEventListener('rgb-frame',draw);
  let down;canvas.onpointerdown=event=>{down=[event.clientX,event.clientY];canvas.setPointerCapture(event.pointerId);};canvas.onpointermove=()=>{};canvas.onpointercancel=()=>{down=undefined;};
  canvas.onpointerup=event=>{
   if(!down)return;const start=down;down=undefined;if(Math.hypot(start[0]-event.clientX,start[1]-event.clientY)>8||Date.now()-detectedAt>1500)return;
@@ -71,7 +71,7 @@ function mount(){
   if(!hits.length){report('请点击画面中的识别框');return;}const target=hits[0];
   try{if(mode==='human')publish(PERSON,{op:'lock',track_id:target.track_id});else publish(MOBILE,{id:crypto.randomUUID(),op:'select',frame_id:detectedFrame,index:target.index});ui.feedback.textContent='已提交目标绑定，等待机器人确认…';}catch(error){report(error);}
  };
- cleanup=()=>{observer.disconnect();preview.removeEventListener('rgb-frame',frame);dispose();ui.stage.replaceChildren();};resize();if(connected)subscribe();
+ cleanup=()=>{observer.disconnect();preview.removeEventListener('load',resize);preview.removeEventListener('rgb-frame',draw);dispose();ui.stage.replaceChildren();};resize();if(connected)subscribe();
 }
 async function selectMode(value){
  const previous=mode,current=++revision;
@@ -80,12 +80,14 @@ async function selectMode(value){
  document.querySelectorAll('[data-mode]').forEach(button=>button.setAttribute('aria-selected',String(button.dataset.mode===mode)));ui.targetOptions.hidden=true;ui.targetToggle.setAttribute('aria-expanded','false');
  try{publish(MOBILE,{op:'mode',mode:mode==='human'?'off':mode});await prepareCase(true);if(current!==revision)return;ui.feedback.textContent=mode==='human'?'点击人物框或竖起大拇指绑定':'点击识别框绑定跟随目标';}catch(error){if(current===revision)report(error);}
 }
-const RADIO_BRIDGE='ws://192.168.144.108:8765',WIFI_BRIDGE='ws://192.168.3.104:8765';let selectedBridge;
-async function connect(){
- const requested=new URLSearchParams(location.search).get('bridge')||RADIO_BRIDGE;
- if(!selectedBridge&&requested===RADIO_BRIDGE)await new Promise(resolve=>{const probe=new WebSocket(WIFI_BRIDGE,'foxglove.sdk.v1');let settled=false;const finish=url=>{if(settled)return;settled=true;clearTimeout(timer);probe.onopen=probe.onerror=probe.onclose=null;probe.close();selectedBridge=url;resolve();};const timer=setTimeout(()=>finish(RADIO_BRIDGE),800);probe.onopen=()=>finish(WIFI_BRIDGE);probe.onerror=probe.onclose=()=>finish(RADIO_BRIDGE);});
- if(closed)return;channels.clear();subscriptions.clear();publishers.clear();services.clear();socket=new WebSocket(selectedBridge||requested,'foxglove.sdk.v1');client=new FoxgloveClient({ws:socket});
- client.on('open',()=>{connected=true;[CONTROL,MOBILE,PERSON].forEach(advertise);ui.feedback.textContent='已连接，正在准备识别…';selectMode(mode);});
+const RADIO_BRIDGE='ws://192.168.144.108:8765',WIFI_BRIDGE='ws://192.168.3.104:8765';
+const requested=new URLSearchParams(location.search).get('bridge')||RADIO_BRIDGE;
+const autoLink=requested===RADIO_BRIDGE;
+let selectedBridge=autoLink?WIFI_BRIDGE:requested;
+function connect(){
+ if(closed)return;channels.clear();subscriptions.clear();publishers.clear();services.clear();socket=new WebSocket(selectedBridge,'foxglove.sdk.v1');client=new FoxgloveClient({ws:socket});
+ const attempt=socket,timer=setTimeout(()=>attempt.close(),autoLink&&selectedBridge===WIFI_BRIDGE?1200:10000);
+ client.on('open',()=>{clearTimeout(timer);if(closed)return;connected=true;window.__followLink=selectedBridge;[CONTROL,MOBILE,PERSON].forEach(advertise);ui.feedback.textContent='已连接，正在准备识别…';selectMode(mode);});
  client.on('advertise',items=>{items.forEach(item=>channels.set(item.id,item));subscribe();});
  client.on('unadvertise',ids=>{for(const id of ids){channels.delete(id);for(const[sub,item]of subscriptions)if(item.id===id)subscriptions.delete(sub);}});
  client.on('advertiseServices',items=>items.forEach(item=>services.set(item.name,item)));
@@ -106,7 +108,7 @@ async function connect(){
   context.onRender?.({currentFrame:[{topic:channel.topic,message}]},()=>{});draw();
  }catch(error){report(error);}});
  client.on('status',status=>{if(status.level>0)report(status.message);});client.on('error',()=>report('连接机器人失败'));
- client.on('close',()=>{connected=false;report('连接中断，正在重连…');if(selectedBridge===WIFI_BRIDGE)selectedBridge=RADIO_BRIDGE;for(const call of calls.values()){clearTimeout(call.timer);call.reject(Error('连接已断开'));}calls.clear();if(!closed)setTimeout(connect,2000);});
+ client.on('close',()=>{clearTimeout(timer);connected=false;report('连接中断，正在重连…');if(autoLink)selectedBridge=selectedBridge===WIFI_BRIDGE?RADIO_BRIDGE:WIFI_BRIDGE;for(const call of calls.values()){clearTimeout(call.timer);call.reject(Error('连接已断开'));}calls.clear();if(!closed)setTimeout(connect,autoLink?400:2000);});
 }
 ui.targetToggle.onclick=()=>{ui.targetOptions.hidden=!ui.targetOptions.hidden;ui.targetToggle.setAttribute('aria-expanded',String(!ui.targetOptions.hidden));};document.querySelectorAll('[data-mode]').forEach(button=>button.onclick=()=>selectMode(button.dataset.mode));
 ui.enableFollow.onclick=()=>parameter('enable_motion',true).catch(report);ui.disableFollow.onclick=()=>{revision++;parameter('enable_motion',false,false).catch(report);};
