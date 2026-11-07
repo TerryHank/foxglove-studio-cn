@@ -29,6 +29,17 @@ class DetectionTests(unittest.TestCase):
         self.assertEqual({item['label'] for item in detect(image, 'shape', ['triangle', 'rectangle'])},
                          {'triangle', 'rectangle'})
 
+    def test_rectangle_touching_background_edge(self):
+        image = np.full((300, 400, 3), 255, np.uint8)
+        cv2.rectangle(image, (130, 100), (240, 200), (0, 0, 0), 2)
+        cv2.line(image, (70, 200), (300, 200), (0, 0, 0), 2)
+        cv2.line(image, (70, 200), (70, 260), (0, 0, 0), 2)
+
+        found = detect(image, 'shape', ['rectangle'])
+        self.assertEqual(len(found), 1)
+        for actual, expected in zip(found[0]['bbox'], (130, 100, 110, 100)):
+            self.assertAlmostEqual(actual, expected, delta=5)
+
     def test_qr_and_multiple_apriltags_in_same_frame(self):
         image = np.full((400, 900, 3), 255, np.uint8)
         qr = cv2.QRCodeEncoder_create().encode('robot104://demo')

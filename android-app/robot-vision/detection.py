@@ -9,9 +9,8 @@ LABELS = {'color': tuple(COLORS), 'shape': ('rectangle', 'circle', 'triangle'),
           'codes': ('QR', 'AprilTag'), 'off': ()}
 
 
-def contours(mask, image_area, clean=True):
-    if clean:
-        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
+def contours(mask, image_area):
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
     found, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     return [c for c in found if 180 <= cv2.contourArea(c) <= image_area * .75]
 
@@ -19,7 +18,16 @@ def contours(mask, image_area, clean=True):
 def detect_shapes(image, labels):
     gray = cv2.GaussianBlur(cv2.cvtColor(image, cv2.COLOR_BGR2GRAY), (5, 5), 0)
     edges = cv2.Canny(gray, 60, 150)
-    closed = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, np.ones((3, 3), np.uint8))
+    if 'rectangle' in labels:
+        # A colored face can have a strong color edge and a weak grayscale edge.
+        color_edges = cv2.Canny(cv2.GaussianBlur(image, (5, 5), 0), 60, 150)
+        yield from shapes_from_edges(gray, edges | color_edges, {'rectangle'}, 7, cv2.RETR_TREE)
+    if labels - {'rectangle'}:
+        yield from shapes_from_edges(gray, edges, labels - {'rectangle'}, 3, cv2.RETR_EXTERNAL)
+
+
+def shapes_from_edges(gray, edges, labels, close_size, retrieval):
+    closed = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, np.ones((close_size, close_size), np.uint8))
     segments = None
     if labels.intersection(('rectangle', 'triangle')):
         lines = cv2.HoughLinesP(edges, 1, np.pi / 180, 14, minLineLength=12, maxLineGap=8)
@@ -27,14 +35,19 @@ def detect_shapes(image, labels):
             segments = lines.reshape(-1, 2, 2)
 
     height, width = gray.shape
-    for contour in contours(closed, width * height, clean=False):
+    found, _ = cv2.findContours(closed, retrieval, cv2.CHAIN_APPROX_SIMPLE)
+    rectangles = []
+    for contour in found:
+        area = cv2.contourArea(contour)
+        if not 180 <= area <= width * height * .75:
+            continue
         perimeter = cv2.arcLength(contour, True)
         poly = cv2.approxPolyDP(contour, .025 * perimeter, True)
         if not cv2.isContourConvex(poly):
             continue
         x, y, w, h = cv2.boundingRect(contour)
         if len(poly) >= 6 and 'circle' in labels and .8 <= w / h <= 1.25:
-            if 4 * math.pi * cv2.contourArea(contour) / perimeter**2 < .8:
+            if 4 * math.pi * area / perimeter**2 < .8:
                 continue
             radius = min(w, h) / 2
             left, top = max(0, x - 5), max(0, y - 5)
@@ -62,11 +75,29 @@ def detect_shapes(image, labels):
             offsets = segments - point
             along = offsets @ direction
             away = offsets @ np.array([-direction[1], direction[0]])
-            overlap = np.minimum(along.max(axis=1), length) - np.maximum(along.min(axis=1), 0)
-            if not np.any((np.abs(away).max(axis=1) <= 5) & (overlap >= .45 * length)):
+            start = np.maximum(along.min(axis=1), 0)
+            end = np.minimum(along.max(axis=1), length)
+            nearby = np.abs(away).max(axis=1) <= 5
+            if np.any(nearby & (end - start >= .45 * length)):
+                continue
+            if label != 'rectangle':
+                break
+            # Hough may split a real edge into several collinear segments.
+            covered = last = 0.
+            intervals = nearby & (end > start)
+            for lo, hi in sorted(zip(start[intervals], end[intervals])):
+                covered += max(0., hi - max(lo, last))
+                last = max(last, hi)
+            if covered < .55 * length:
                 break
         else:
-            yield {'label': label, 'bbox': [x, y, w, h]}
+            bbox = [x, y, w, h]
+            if label == 'rectangle':
+                # The inside and outside borders of the same edge can both be traced.
+                if any(all(abs(a - b) <= 4 for a, b in zip(bbox, previous)) for previous in rectangles):
+                    continue
+                rectangles.append(bbox)
+            yield {'label': label, 'bbox': bbox}
 
 
 def detect(image, mode, labels=None):
