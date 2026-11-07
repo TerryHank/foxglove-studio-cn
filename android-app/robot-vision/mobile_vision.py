@@ -67,6 +67,7 @@ class MobileVision(Node):
     def cancel(self):
         if self.session_id is not None:
             self.tracker_command('cancel')
+            self.orphan_session = self.session_id
         self.session_id = self.target = self.last_seen = None
         self.tracking_state = 'recognizing'
         self.clear_frames()
@@ -152,9 +153,12 @@ class MobileVision(Node):
                 self.tracking_state = 'searching'
             self.publish_state()
             return
+        if self.mode == 'off':
+            self.publish_state()
+            return
         with self.lock:
             message, self.latest = self.latest, None
-        if message is None or self.mode == 'off':
+        if message is None:
             return
         try:
             image = self.bridge.imgmsg_to_cv2(message, desired_encoding='bgr8')
