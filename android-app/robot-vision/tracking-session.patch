@@ -44,7 +44,15 @@
              external_runtime_ = value.value("runtime",std::string("unknown"));
              external_backend_ = value.value("tracker",std::string("nanotrack"));
              if (value.at("tracks").empty()) {
-@@ -766,6 +789,7 @@
+@@ -751,6 +774,7 @@
+     const double gain = sx;
+     data << "{\"source_stamp\":" << std::fixed << std::setprecision(9)
+          << (external_tracker_ && tracker_initialized_ ? external_stamp_ : rclcpp::Time(header.stamp).seconds()) << ",\"image_width\":" << image_width_
++         << ",\"image_height\":" << image_height_
+          << ",\"tracking_width\":" << tracked_frame.cols
+          << ",\"tracking_height\":" << tracked_frame.rows
+          << ",\"display_width\":" << display.cols
+@@ -766,6 +790,7 @@
           << ",\"target_distance_m\":" << target_distance_
           << ",\"distance_persistent\":" << (distance_persistent_ ? "true" : "false")
           << ",\"locked_id\":" << target_id_
@@ -52,7 +60,7 @@
           << ",\"tracks\":[";
      if (tracker_initialized_) {
        data << "{\"track_id\":" << target_id_ << ",\"class\":\"kcf\",\"bbox\":["
-@@ -923,6 +947,9 @@
+@@ -923,6 +948,9 @@
    std::string external_runtime_ = "unknown";
    std::string external_backend_ = "nanotrack";
    rclcpp::Subscription<std_msgs::msg::String>::SharedPtr external_sub_;
