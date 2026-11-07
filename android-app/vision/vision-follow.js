@@ -17,7 +17,8 @@ const filterLabels={color:['red','green','blue','yellow'],shape:['rectangle','ci
 const selectedFilters=Object.fromEntries(Object.entries(filterLabels).map(([key,items])=>[key,new Set(items)]));
 const channels=new Map(),subscriptions=new Map(),publishers=new Map(),services=new Map(),calls=new Map();
 let client,socket,connected=false,closed=false,callId=0,revision=0,mode='color',runningCase,runningPhase,runningRequest,preparation,editingDistance=false;
-let context,cleanup,picker,canvas,preview,detections=[],detectedFrame,detectedAt=0,frameSize=[640,480],selectedLabel='',motion=false,motionIntent,lockedTrack;
+let context,cleanup,picker,canvas,preview,detections=[],detectedFrame,detectedAt=0,frameSize=[640,480],motion=false,motionIntent,lockedTrack,trackedAt=0;
+let mobileState, sessionId, selectedLabel='', synchronized=false;
 const report=error=>{ui.feedback.textContent=error.message||String(error);};
 const caseId=()=>mode==='human'?'04_09_body_tracking':'02_07_kcf';
 const serviceName=()=>mode==='human'?'/body_tracking_104/horizon_tracking_RobotCmdVel/set_parameters':'/kcf_follower/set_parameters';
@@ -120,9 +121,12 @@ async function parameter(name,value,prepare=true){
  ui.feedback.textContent=name==='enable_motion'?(value?'底盘跟随已开启':'底盘跟随已关闭'):`跟随距离已设为 ${value.toFixed(2)} m`;
 }
 function draw(){
- if(!canvas)return;const pen=canvas.getContext('2d');pen.clearRect(0,0,canvas.width,canvas.height);if(Date.now()-detectedAt>1500)return;
+ if(!canvas)return;
+ const pen=canvas.getContext('2d');pen.clearRect(0,0,canvas.width,canvas.height);
+ const items=sessionId?(lockedTrack&&Date.now()-trackedAt<=1500?[lockedTrack]:[])
+  :Date.now()-detectedAt<=1500?visibleDetections():[];
  const sx=canvas.width/frameSize[0],sy=canvas.height/frameSize[1];pen.font='15px sans-serif';pen.lineWidth=2;
- for(const item of [...visibleDetections(),...(lockedTrack?[lockedTrack]:[])]){const[x,y,w,h]=item.bbox,text=labels[item.label]||item.label;pen.strokeStyle=item.selected?'#79d6aa':'#b19aef';pen.strokeRect(x*sx,y*sy,w*sx,h*sy);
+ for(const item of items){const[x,y,w,h]=item.bbox,text=labels[item.label]||item.label;pen.strokeStyle=item.selected?'#79d6aa':'#b19aef';pen.strokeRect(x*sx,y*sy,w*sx,h*sy);
  const caption=text+(item.text?' '+item.text:''),ty=Math.max(18,y*sy-5),width=pen.measureText(caption).width;pen.fillStyle='#15151add';pen.fillRect(x*sx,ty-17,width+8,22);pen.fillStyle=pen.strokeStyle;pen.fillText(caption,x*sx+4,ty);}
 }
 function mount(){
@@ -133,23 +137,89 @@ function mount(){
  const observer=new ResizeObserver(resize);observer.observe(ui.stage);preview.addEventListener('load',resize);preview.addEventListener('rgb-frame',draw);
  let down;canvas.onpointerdown=event=>{down=[event.clientX,event.clientY];canvas.setPointerCapture(event.pointerId);};canvas.onpointermove=()=>{};canvas.onpointercancel=()=>{down=undefined;};
  canvas.onpointerup=event=>{
-  if(!down)return;const start=down;down=undefined;if(Math.hypot(start[0]-event.clientX,start[1]-event.clientY)>8||Date.now()-detectedAt>1500)return;
+  if(!down)return;
+  const start=down;down=undefined;
+  if(!synchronized||Math.hypot(start[0]-event.clientX,start[1]-event.clientY)>8)return;
   const box=canvas.getBoundingClientRect(),x=(event.clientX-box.x)*frameSize[0]/box.width,y=(event.clientY-box.y)*frameSize[1]/box.height;
-  const hits=visibleDetections().filter(item=>x>=item.bbox[0]&&y>=item.bbox[1]&&x<=item.bbox[0]+item.bbox[2]&&y<=item.bbox[1]+item.bbox[3]).sort((a,b)=>a.bbox[2]*a.bbox[3]-b.bbox[2]*b.bbox[3]);
+  const contains=({bbox:[left,top,width,height]})=>x>=left&&y>=top&&x<=left+width&&y<=top+height;
+  if(sessionId){
+   if(!lockedTrack||Date.now()-trackedAt>1500||!contains(lockedTrack)){
+    try{publish(MOBILE,{op:'cancel',session_id:sessionId});}catch(error){report(error);}
+   }
+   return;
+  }
+  if(Date.now()-detectedAt>1500)return;
+  const hits=visibleDetections().filter(contains).sort((a,b)=>a.bbox[2]*a.bbox[3]-b.bbox[2]*b.bbox[3]);
   if(!hits.length){report('请点击画面中的识别框');return;}const target=hits[0];
   try{if(mode==='human')publish(PERSON,{op:'lock',track_id:target.track_id});else publish(MOBILE,{id:crypto.randomUUID(),op:'select',frame_id:detectedFrame,index:target.index});ui.feedback.textContent='已提交目标绑定，等待机器人确认…';}catch(error){report(error);}
  };
  cleanup=()=>{observer.disconnect();preview.removeEventListener('load',resize);preview.removeEventListener('rgb-frame',draw);dispose();ui.stage.replaceChildren();};resize();if(connected)subscribe();
 }
-async function selectMode(value){
- closeMenus();
- const previous=mode,current=++revision;
- if((motion||motionIntent?.enabled)&&previous!==value){try{await parameter('enable_motion',false,false);}catch(error){report(error);return;}}
- if(current!==revision)return;mode=value;editingDistance=false;mount();ui.targetName.textContent=titles[mode];
+function showMode(value){
+ if(mode!==value){
+  mode=value;sessionId=undefined;editingDistance=false;mount();
+ }
+ ui.targetName.textContent=titles[mode];
  ui.modeHelp.textContent=modeHelp[mode];
  renderFilters();
  document.querySelectorAll('[data-mode]').forEach(button=>button.setAttribute('aria-selected',String(button.dataset.mode===mode)));
- try{sendFilters();await prepareCase(true);if(current!==revision)return;ui.feedback.textContent=mode==='human'?'点击人物框或竖起大拇指绑定':'点击识别框绑定跟随目标';}catch(error){if(current===revision)report(error);}
+}
+async function selectMode(value){
+ closeMenus();
+ if(!synchronized||value===mode)return;
+ const current=++revision;
+ if((mode==='human'||value==='human')&&(motion||motionIntent?.enabled)){
+  try{await parameter('enable_motion',false,false);}catch(error){report(error);return;}
+ }
+ if(current!==revision)return;
+ showMode(value);
+ try{
+  sendFilters();
+  await prepareCase();
+  if(current===revision&&!sessionId)ui.feedback.textContent=mode==='human'?'点击人物框或竖起大拇指绑定':'点击识别框绑定跟随目标';
+ }catch(error){if(current===revision)report(error);}
+}
+function applyMobileState(state){
+ if(state.mode!==mode)return;
+ const previousSession=sessionId;
+ sessionId=state.session_id||undefined;
+ if(previousSession!==sessionId){
+  detections=[];detectedAt=0;lockedTrack=undefined;
+ }
+ const target=state.target;
+ selectedLabel=target?(labels[target.label]||target.label)+(target.text?' '+target.text:''):'';
+ ui.modeHelp.textContent=sessionId?'点画面空白处取消跟踪。':modeHelp[mode];
+ if(state.tracking_state==='searching'){
+  lockedTrack=undefined;
+  ui.feedback.textContent=`正在找回 ${selectedLabel} · 剩余 ${Math.ceil(state.remaining_s)} 秒`;
+ }else if(state.tracking_state==='locking'){
+  ui.feedback.textContent=`正在锁定 ${selectedLabel}…`;
+ }else if(previousSession&&!sessionId){
+  ui.feedback.textContent='点击识别框绑定跟随目标';
+ }
+ draw();
+}
+async function synchronize(attempt){
+ const until=Date.now()+8000;
+ while(connected&&socket===attempt&&Date.now()<until){
+  publish(MOBILE,{op:'status'});
+  if(mobileState&&runningPhase)break;
+  await delay(350);
+ }
+ if(!connected||socket!==attempt)return;
+ if(!mobileState||!runningPhase)throw Error('未收到机器人跟踪状态，请检查车端服务');
+ const restored=runningCase==='04_09_body_tracking'&&runningPhase==='RUNNING'?'human'
+  :filterLabels[mobileState.mode]?mobileState.mode:mode==='human'?'color':mode;
+ if(filterLabels[restored]&&mobileState.mode===restored){
+  selectedFilters[restored]=new Set(mobileState.labels);
+ }
+ showMode(restored);
+ if(mode!=='human'&&mobileState.mode===mode)applyMobileState(mobileState);
+ else if(mode!=='human')sendFilters();
+ await prepareCase();
+ if(!connected||socket!==attempt)return;
+ synchronized=true;
+ if(!sessionId)ui.feedback.textContent=mode==='human'?'点击人物框或竖起大拇指绑定':'点击识别框绑定跟随目标';
 }
 const RADIO_BRIDGE='ws://192.168.144.108:8765',WIFI_BRIDGE='ws://192.168.3.104:8765';
 const requested=new URLSearchParams(location.search).get('bridge')||RADIO_BRIDGE;
@@ -158,7 +228,13 @@ let selectedBridge=autoLink?WIFI_BRIDGE:requested;
 function connect(){
  if(closed)return;channels.clear();subscriptions.clear();publishers.clear();services.clear();socket=new WebSocket(selectedBridge,'foxglove.sdk.v1');client=new FoxgloveClient({ws:socket});
  const attempt=socket,timer=setTimeout(()=>attempt.close(),autoLink&&selectedBridge===WIFI_BRIDGE?3000:10000);
- client.on('open',()=>{clearTimeout(timer);if(closed)return;connected=true;window.__followLink=selectedBridge;[CONTROL,MOBILE,PERSON].forEach(advertise);ui.feedback.textContent='已连接，正在准备识别…';selectMode(mode);});
+ client.on('open',()=>{
+  clearTimeout(timer);if(closed)return;
+  connected=true;synchronized=false;mobileState=undefined;runningPhase=undefined;
+  window.__followLink=selectedBridge;[CONTROL,MOBILE,PERSON].forEach(advertise);
+  ui.feedback.textContent='已连接，正在读取跟踪状态…';
+  synchronize(attempt).catch(error=>{if(connected&&socket===attempt)report(error);});
+ });
  client.on('advertise',items=>{items.forEach(item=>channels.set(item.id,item));subscribe();});
  client.on('unadvertise',ids=>{for(const id of ids){channels.delete(id);for(const[sub,item]of subscriptions)if(item.id===id)subscriptions.delete(sub);}});
  client.on('advertiseServices',items=>items.forEach(item=>services.set(item.name,item)));
@@ -168,20 +244,36 @@ function connect(){
   const channel=subscriptions.get(event.subscriptionId);if(!channel)return;const message=channel.reader.readMessage(event.data);
   if(channel.topic===RGB){window.FoxgloveVision.updateRgb(message);return;}const state=JSON.parse(message.data);
   if(channel.topic===STATUS){runningCase=state.case_id;runningPhase=state.phase;runningRequest=state.request_id;if(state.phase==='ERROR')report(state.message);return;}
-  if(channel.topic===DETECTIONS){if(state.error){report(state.error);return;}if(state.selection){selectedLabel=(labels[state.selection.label]||state.selection.label)+(state.selection.text?' '+state.selection.text:'');ui.feedback.textContent='已交给跟踪器：'+selectedLabel;return;}if(state.mode!==mode)return;detections=state.detections.map((item,index)=>({...item,index}));detectedFrame=state.frame_id;detectedAt=Date.now();frameSize=[state.width,state.height];draw();return;}
+  if(channel.topic===DETECTIONS){
+   if(state.error){report(state.error);return;}
+   if(state.op==='state'){
+    mobileState=state;
+    if(synchronized&&state.mode==='off'&&mode!=='human'&&runningCase===caseId()){
+     applyMobileState({...state,mode});sendFilters();
+    }else applyMobileState(state);
+    return;
+   }
+   if(state.mode!==mode||sessionId||!Array.isArray(state.detections))return;
+   detections=state.detections.map((item,index)=>({...item,index}));
+   detectedFrame=state.frame_id;detectedAt=Date.now();frameSize=[state.width,state.height];draw();return;
+  }
   const distance=mode==='human'?state.body_tracking?.target_distance_m??state.follow_distance_m:state.target_distance_m;
   const enabled=mode==='human'?state.body_tracking?.motion_enabled:state.enable_motion;
   if(typeof enabled==='boolean')setMotion(enabled);
   if(!editingDistance&&Number.isFinite(distance))ui.distanceSlider.value=ui.distanceValue.value=distance;
   if(channel.topic===BODY&&mode==='human'){frameSize=state.rgb_resolution||[640,480];detectedAt=Date.now();detections=(state.tracks||[]).map(item=>({...item,track_id:item.id??item.track_id,label:'人体 ID '+(item.id??item.track_id),bbox:[item.bbox[0],item.bbox[1],item.bbox[2]-item.bbox[0],item.bbox[3]-item.bbox[1]],selected:(item.id??item.track_id)===state.track_id}));if(state.track_id!=null)ui.feedback.textContent=`已绑定人物 ID ${state.track_id} · ${motion?'底盘已开启':'底盘已关闭'}`;}
   if(channel.topic===KCF&&mode!=='human'){
-   lockedTrack=state.tracks?.length&&selectedLabel?{bbox:state.tracks[0].bbox,label:selectedLabel,selected:true}:undefined;
+   if(sessionId&&state.session_id===sessionId&&mobileState?.tracking_state==='tracking'){
+    frameSize=[state.image_width,state.image_height];
+    lockedTrack=state.tracks?.length?{bbox:state.tracks[0].bbox,label:selectedLabel,selected:true}:undefined;
+    trackedAt=Date.now();
+   }else lockedTrack=undefined;
    if(lockedTrack)ui.feedback.textContent=`已锁定 ${selectedLabel} · ${state.depth_m==null?'等待读取距离':Number(state.depth_m).toFixed(2)+' m'} · ${motion?'底盘已开启':'底盘已关闭'}`;
   }
   context.onRender?.({currentFrame:[{topic:channel.topic,message}]},()=>{});draw();
  }catch(error){report(error);}});
  client.on('status',status=>{if(status.level>0)report(status.message);});client.on('error',()=>report('连接机器人失败'));
- client.on('close',()=>{clearTimeout(timer);if(autoLink&&(!connected||selectedBridge===RADIO_BRIDGE))selectedBridge=selectedBridge===WIFI_BRIDGE?RADIO_BRIDGE:WIFI_BRIDGE;connected=false;report('连接中断，正在重连…');for(const call of calls.values()){clearTimeout(call.timer);call.reject(Error('连接已断开'));}calls.clear();if(!closed)setTimeout(connect,autoLink?400:2000);});
+ client.on('close',()=>{clearTimeout(timer);if(autoLink&&(!connected||selectedBridge===RADIO_BRIDGE))selectedBridge=selectedBridge===WIFI_BRIDGE?RADIO_BRIDGE:WIFI_BRIDGE;connected=synchronized=false;report('连接中断，正在重连…');for(const call of calls.values()){clearTimeout(call.timer);call.reject(Error('连接已断开'));}calls.clear();if(!closed)setTimeout(connect,autoLink?400:2000);});
 }
 document.querySelectorAll('[data-mode]').forEach(button=>button.onclick=()=>selectMode(button.dataset.mode));
 ui.filterAll.onchange=()=>{selectedFilters[mode]=new Set(ui.filterAll.checked?filterLabels[mode]:[]);filtersChanged();};

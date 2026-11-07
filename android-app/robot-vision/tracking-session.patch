@@ -1,0 +1,143 @@
+--- a/src/kcf_follower_node.cpp
++++ b/src/kcf_follower_node.cpp
+@@ -211,19 +211,42 @@
+     roi_sub_ = create_subscription<sensor_msgs::msg::RegionOfInterest>(
+       "/omnifleet_vision/kcf/roi", 1,
+       [this](sensor_msgs::msg::RegionOfInterest::ConstSharedPtr roi) {
+-        if (roi->width <= 1 || roi->height <= 1) return;
++        if (!mobile_session_.empty() || roi->width <= 1 || roi->height <= 1) return;
++        accept_external_result_ = true;
+         pending_roi_ = *roi;
+         external_box_.reset();
+         lose_target();
+         // External selections are forwarded on a frame after the backend connects.
+       });
+     if (external_tracker_) {
++      mobile_control_sub_ = create_subscription<std_msgs::msg::String>(
++        "/vision/mobile/tracking_control", 10,
++        [this](std_msgs::msg::String::ConstSharedPtr message) {
++          try {
++            const auto value = nlohmann::json::parse(message->data);
++            const auto session = value.at("session_id").get<std::string>();
++            const auto op = value.at("op").get<std::string>();
++            if (session.empty() ||
++              (op != "select" && (op != "cancel" || session != mobile_session_))) return;
++            mobile_session_ = op == "select" ? session : "";
++            accept_external_result_ = op == "select";
++            pending_roi_.reset();
++            external_box_.reset();
++            target_id_ = 0;
++            lose_target();
++          } catch (const std::exception & error) {
++            RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 5000,
++              "Mobile tracking command: %s", error.what());
++          }
++        });
+       external_roi_pub_ = create_publisher<sensor_msgs::msg::RegionOfInterest>("/vision/nanotrack/roi",rclcpp::QoS(1));
+       processing_pub_ = create_publisher<Image>("/vision/nanotrack/input",rclcpp::SensorDataQoS().keep_last(1));
+       external_sub_ = create_subscription<std_msgs::msg::String>("/vision/nanotrack/selected", 1,
+         [this](std_msgs::msg::String::ConstSharedPtr message) {
+           try {
+             const auto value = nlohmann::json::parse(message->data);
++            if (!accept_external_result_ ||
++              value.value("session_id", std::string()) != mobile_session_) return;
+             external_runtime_ = value.value("runtime",std::string("unknown"));
+             external_backend_ = value.value("tracker",std::string("nanotrack"));
+             if (value.at("tracks").empty()) {
+@@ -766,6 +789,7 @@
+          << ",\"target_distance_m\":" << target_distance_
+          << ",\"distance_persistent\":" << (distance_persistent_ ? "true" : "false")
+          << ",\"locked_id\":" << target_id_
++         << ",\"session_id\":" << nlohmann::json(mobile_session_).dump()
+          << ",\"tracks\":[";
+     if (tracker_initialized_) {
+       data << "{\"track_id\":" << target_id_ << ",\"class\":\"kcf\",\"bbox\":["
+@@ -923,6 +947,9 @@
+   std::string external_runtime_ = "unknown";
+   std::string external_backend_ = "nanotrack";
+   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr external_sub_;
++  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr mobile_control_sub_;
++  std::string mobile_session_;
++  bool accept_external_result_ = true;
+   bool remote_roi_ = false;
+   int image_height_ = 0;
+   std::optional<sensor_msgs::msg::RegionOfInterest> pending_roi_;
+--- a/scripts/integration/nanotrack_node.py
++++ b/scripts/integration/nanotrack_node.py
+@@ -37,6 +37,9 @@
+         self.cache, self.latest_detection = OrderedDict(), None
+         self.depth_values, self.control_value = {}, None
+         self.pending_roi, self.manual_tracker, self.manual_id = None, None, 0
++        self.selection_pending = None
++        self.requested_session = ''
++        self.session_id = ''
+         self.source_info = None
+         self.foreground_cache,self.color_cache={},{}
+         self.foreground_results={}
+@@ -50,6 +53,7 @@
+                                  QoSProfile(depth=1,reliability=ReliabilityPolicy.BEST_EFFORT))
+         if self.mode == 'roi':
+             self.create_subscription(RegionOfInterest,str(p('roi_topic','/vision/nanotrack/roi')),self.on_roi,QoSProfile(depth=1,reliability=ReliabilityPolicy.RELIABLE,durability=DurabilityPolicy.VOLATILE))
++            self.create_subscription(String, '/vision/mobile/tracking_control', self.on_tracking_control, 10)
+             self.hybrid = None
+         else:
+             self.create_subscription(String,str(p('input_topic','/vision/detections')),self.on_detection,1)
+@@ -127,8 +131,34 @@
+         self.source_info = message
+ 
+     def on_roi(self, message):
+-        self.pending_roi = message
+-        self.manual_tracker = None
++        with self.frame_lock:
++            if self.requested_session:
++                return
++            self.selection_pending = ('', message)
++        self.frame_event.set()
++
++    def on_tracking_control(self, message):
++        try:
++            value = json.loads(message.data)
++            session = value['session_id']
++            op = value['op']
++            if not isinstance(session, str) or not session:
++                return
++            if op == 'select':
++                x, y, w, h = value['bbox']
++                roi = RegionOfInterest(x_offset=x, y_offset=y, width=w, height=h)
++            elif op == 'cancel':
++                roi = None
++            else:
++                return
++            with self.frame_lock:
++                if op == 'cancel' and session != self.requested_session:
++                    return
++                self.requested_session = session if roi is not None else ''
++                self.selection_pending = (self.requested_session, roi)
++            self.frame_event.set()
++        except (ValueError, TypeError, KeyError, AssertionError) as error:
++            self.get_logger().warning(f'Invalid mobile tracking command: {error}')
+ 
+     def on_detection(self, message):
+         try:
+@@ -149,7 +179,11 @@
+             self.frame_event.wait(.2)
+             with self.frame_lock:
+                 frames=list(self.pending_frames)
++                selection, self.selection_pending = self.selection_pending, None
+                 self.frame_event.clear()
++            if selection is not None:
++                self.session_id, self.pending_roi = selection
++                self.manual_tracker = None
+             message=self.foreground.select_frame(frames,self.last_frame_stamp,time.monotonic())
+             if message is None:continue
+             self.last_frame_stamp=self.foreground.image_stamp(message)
+@@ -237,7 +271,8 @@
+                        foreground_tracking=True,additional_segmentation_models=0,
+                        foreground_depth_ready=self.foreground.depth is not None,foreground_depth_skew_ms=self.foreground.skew_ms)
+         if self.mode=='roi':
+-            payload.update(selected_track_id=self.manual_id if self.manual_tracker is not None else None,
++            payload.update(session_id=self.session_id,
++                           selected_track_id=self.manual_id if self.manual_tracker is not None else None,
+                            tracking_stop_reason=getattr(self.manual_tracker,'stop_reason',''),
+                            template_score=getattr(self.manual_tracker,'template_score',None))
+         self.output.publish(String(data=json.dumps(payload,separators=(',',':'))))

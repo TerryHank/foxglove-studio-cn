@@ -21,7 +21,7 @@ variants = [
 versions = {
     'navigation': ('6', '1.3.2-low-latency'),
     'wifi': ('3', '1.2-foxglove-theme'),
-    'follow': ('10', '1.7.1-mode-help'),
+    'follow': ('11', '1.8-object-session'),
 }
 def run(*args, **kwargs):
     return subprocess.run([str(a) for a in args], check=True, **kwargs)
