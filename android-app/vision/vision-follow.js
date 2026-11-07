@@ -13,6 +13,7 @@ const channels = new Map(), subscriptions = new Map(), publishers = new Map(), s
 let client, socket, context, dispose, mode = ui.mode.value, connected = false, callId = 0, motion = false, closed = false;
 const report = error => { ui.feedback.textContent = error.message || String(error); };
 let runningCase, runningPhase, preparation, distanceEdited = false;
+let controlRevision = 0;
 function parameter(name, value) {
   return { name, value: { type: typeof value === 'boolean' ? 1 : 3, bool_value: typeof value === 'boolean' ? value : false, integer_value: 0, double_value: typeof value === 'number' ? value : 0, string_value: '', byte_array_value: [], bool_array_value: [], integer_array_value: [], double_array_value: [], string_array_value: [] } };
 }
@@ -35,10 +36,13 @@ async function prepareCase() {
   try { await preparation; } finally { preparation = undefined; }
 }
 async function updateFollow(name, value, prepare = true) {
+  const revision = controlRevision, selected = mode;
   if (prepare) await prepareCase();
+  if (revision !== controlRevision || selected !== mode) return;
   const service = mode === '04_09_body_tracking' ? bodyService : '/kcf_follower/set_parameters';
   const deadline = Date.now() + 15000;
   while (!services.has(service) && connected && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 300));
+  if (revision !== controlRevision || selected !== mode) return;
   const reply = await callService(service, {parameters:[parameter(name, value)]});
   if (!reply.results?.length || reply.results.some(item => !item.successful)) throw Error(reply.results?.map(item => item.reason).join('; ') || '参数未接受');
   ui.feedback.textContent = name === 'enable_motion' ? (value ? '底盘跟随已开启' : '底盘跟随已关闭') : `跟随距离已设为 ${value.toFixed(2)} m`;
@@ -212,9 +216,10 @@ async function connect() {
     if (!closed) setTimeout(connect, 2000);
   });
 }
-ui.mode.onchange = () => { distanceEdited = false; mount(); prepareCase().then(() => { ui.feedback.textContent = mode === '04_09_body_tracking' ? '竖起大拇指选择人物' : '请在画面中框选物体'; }).catch(report); };
+ui.mode.onchange = () => { controlRevision++; distanceEdited = false; mount(); prepareCase().then(() => { ui.feedback.textContent = mode === '04_09_body_tracking' ? '竖起大拇指选择人物' : '请在画面中框选物体'; }).catch(report); };
 ui.enableFollow.onclick = () => updateFollow('enable_motion', true).catch(report);
 ui.disableFollow.onclick = () => {
+  controlRevision++;
   if (runningCase !== mode) {
     try { publish(CONTROL,{data:JSON.stringify({id:crypto.randomUUID(),op:'stop'})}); ui.feedback.textContent='已提交停止'; } catch(error) { report(error); }
   } else updateFollow('enable_motion',false,false).catch(report);
