@@ -49,7 +49,7 @@ for name, label, activity, color, symbol in variants:
     run(tools / 'aapt2', 'compile', '--dir', stage / 'res', '-o', stage / 'resources.zip')
     run(tools / 'aapt2', 'link', '-I', android, '--manifest', manifest, '--java', stage / 'generated',
         '--custom-package', namespace, '--min-sdk-version', '26', '--target-sdk-version', '35',
-        '--version-code', '1', '--version-name', '1.0-test', '-A', stage / 'assets',
+        '--version-code', '4' if name == 'follow' else '1', '--version-name', '1.3-simple-follow' if name == 'follow' else '1.0-test', '-A', stage / 'assets',
         '-o', stage / 'resources.apk', stage / 'resources.zip')
     sources = list(java.glob('*.java')) if name == 'navigation' else [java / (activity + '.java')]
     if name == 'follow': sources.append(java / 'LocalAssetServer.java')

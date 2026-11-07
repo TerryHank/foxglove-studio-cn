@@ -11,7 +11,38 @@ const RGB = '/camera/color/image_raw/compressed';
 const bodyService = '/body_tracking_104/horizon_tracking_RobotCmdVel/set_parameters';
 const channels = new Map(), subscriptions = new Map(), publishers = new Map(), services = new Map(), calls = new Map();
 let client, socket, context, dispose, mode = ui.mode.value, connected = false, callId = 0, motion = false, closed = false;
-const report = error => { ui.status.textContent = error.message || String(error); };
+const report = error => { ui.feedback.textContent = error.message || String(error); };
+let runningCase, runningPhase, preparation, distanceEdited = false;
+function parameter(name, value) {
+  return { name, value: { type: typeof value === 'boolean' ? 1 : 3, bool_value: typeof value === 'boolean' ? value : false, integer_value: 0, double_value: typeof value === 'number' ? value : 0, string_value: '', byte_array_value: [], bool_array_value: [], integer_array_value: [], double_array_value: [], string_array_value: [] } };
+}
+async function prepareCase() {
+  if (runningCase === mode && runningPhase === 'RUNNING') return;
+  if (preparation) return preparation;
+  const selected = mode;
+  preparation = (async () => {
+    publish(CONTROL, {data:JSON.stringify({id:crypto.randomUUID(),op:'start',case_id:selected,parameters:{enable_motion:'false'}})});
+    ui.feedback.textContent = '正在准备识别…';
+    const deadline = Date.now() + 60000;
+    while (Date.now() < deadline) {
+      if (mode !== selected) throw Error('跟随对象已切换');
+      if (runningCase === selected && runningPhase === 'RUNNING') return;
+      if (runningPhase === 'ERROR') throw Error('识别启动失败，请重新选择对象');
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    throw Error('识别准备超时，请重试');
+  })();
+  try { await preparation; } finally { preparation = undefined; }
+}
+async function updateFollow(name, value, prepare = true) {
+  if (prepare) await prepareCase();
+  const service = mode === '04_09_body_tracking' ? bodyService : '/kcf_follower/set_parameters';
+  const deadline = Date.now() + 15000;
+  while (!services.has(service) && connected && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 300));
+  const reply = await callService(service, {parameters:[parameter(name, value)]});
+  if (!reply.results?.length || reply.results.some(item => !item.successful)) throw Error(reply.results?.map(item => item.reason).join('; ') || '参数未接受');
+  ui.feedback.textContent = name === 'enable_motion' ? (value ? '底盘跟随已开启' : '底盘跟随已关闭') : `跟随距离已设为 ${value.toFixed(2)} m`;
+}
 const definitions = schema => parse(schema, { ros2: true });
 function subscribe() {
   const wanted = new Set([RGB, STATUS, ...(context?.topics || [])]);
@@ -74,7 +105,7 @@ function mount() {
   const startButton = ui.panel.querySelector('[data-ui=start]');
   startButton.textContent = '开始跟踪';
   const resize = () => {
-    const img = picker.querySelector('img');
+    const img = picker.querySelector('[data-ui=kcfPreview]');
     const ratio = (img?.naturalWidth || 640) / (img?.naturalHeight || 480);
     const width = Math.min(ui.stage.clientWidth, ui.stage.clientHeight * ratio);
     picker.style.width = width + 'px';
@@ -82,15 +113,58 @@ function mount() {
   };
   const observer = new ResizeObserver(resize);
   observer.observe(ui.stage);
-  const img = picker.querySelector('img');
+  const img = picker.querySelector('[data-ui=kcfPreview]');
   img?.addEventListener('load', resize);
   const cleanup = dispose;
   dispose = () => { observer.disconnect(); img?.removeEventListener('load', resize); cleanup(); ui.stage.replaceChildren(); };
   resize();
 }
-function connect() {
+const RADIO_BRIDGE='ws://192.168.144.108:8765';
+const WIFI_BRIDGE='ws://192.168.3.104:8765';
+let selectedBridge, bridgeSelection;
+function prepareBridge(requested) {
+  if (bridgeSelection) return bridgeSelection;
+  if (requested !== RADIO_BRIDGE) {
+    selectedBridge=requested;
+    return bridgeSelection=Promise.resolve();
+  }
+  bridgeSelection=new Promise(resolve=>{
+    let settled=false;
+    const probe=new WebSocket(WIFI_BRIDGE,'foxglove.sdk.v1');
+    const timer=setTimeout(()=>finish(RADIO_BRIDGE),800);
+    function finish(url) {
+      if(settled)return;
+      settled=true;clearTimeout(timer);
+      probe.onopen=probe.onerror=probe.onclose=null;
+      probe.close();selectedBridge=url;resolve();
+    }
+    probe.onopen=()=>finish(WIFI_BRIDGE);
+    probe.onerror=probe.onclose=()=>finish(RADIO_BRIDGE);
+  });
+  return bridgeSelection;
+}
+function openFollowSocket(requested) {
+  const endpoint=selectedBridge||requested;
+  const ws=new WebSocket(endpoint,'foxglove.sdk.v1');
+  ws.addEventListener('open',()=>{
+    const link=endpoint===WIFI_BRIDGE?'Wi-Fi':endpoint===RADIO_BRIDGE?'图传':'自定义';
+    window.__followLink=link;
+    setTimeout(()=>{
+      if(ws.readyState===WebSocket.OPEN)ui.connection.textContent='已连接 104 · '+link;
+    },0);
+  });
+  ws.addEventListener('close',()=>{
+    if(endpoint===WIFI_BRIDGE)selectedBridge=RADIO_BRIDGE;
+  });
+  return ws;
+}
+
+async function connect() {
+  const requested=new URLSearchParams(location.search).get('bridge') || RADIO_BRIDGE;
+  await prepareBridge(requested);
+  if(closed)return;
   channels.clear(); subscriptions.clear(); publishers.clear(); services.clear();
-  socket = new WebSocket(new URLSearchParams(location.search).get('bridge') || 'ws://192.168.144.108:8765', 'foxglove.sdk.v1');
+  socket = openFollowSocket(requested);
   client = new FoxgloveClient({ ws: socket });
   client.on('open', () => {
     connected = true; ui.connection.textContent = '已连接 104';
@@ -113,7 +187,13 @@ function connect() {
       if (channel.topic === RGB) { window.FoxgloveVision.updateRgb(message); return; }
       if (channel.topic === STATUS) {
         const state = JSON.parse(message.data);
+        runningCase = state.case_id; runningPhase = state.phase;
         ui.status.textContent = `${state.phase} · ${state.case_id || '未启动'} · ${state.message}`;
+      }
+      if (channel.topic === (mode === '04_09_body_tracking' ? '/vision/body_tracking/status' : '/omnifleet_vision/kcf/status')) {
+        const state = JSON.parse(message.data);
+        const distance = mode === '04_09_body_tracking' ? state.body_tracking?.target_distance_m ?? state.follow_distance_m : state.target_distance_m;
+        if (!distanceEdited && Number.isFinite(distance)) ui.distanceSlider.value = ui.distanceValue.value = distance;
       }
       if (channel.topic === '/vision/body_tracking/status') {
         const state = JSON.parse(message.data), body = state.body_tracking || {};
@@ -132,7 +212,23 @@ function connect() {
     if (!closed) setTimeout(connect, 2000);
   });
 }
-ui.mode.onchange = mount;
+ui.mode.onchange = () => { distanceEdited = false; mount(); prepareCase().then(() => { ui.feedback.textContent = mode === '04_09_body_tracking' ? '竖起大拇指选择人物' : '请在画面中框选物体'; }).catch(report); };
+ui.enableFollow.onclick = () => updateFollow('enable_motion', true).catch(report);
+ui.disableFollow.onclick = () => {
+  if (runningCase !== mode) {
+    try { publish(CONTROL,{data:JSON.stringify({id:crypto.randomUUID(),op:'stop'})}); ui.feedback.textContent='已提交停止'; } catch(error) { report(error); }
+  } else updateFollow('enable_motion',false,false).catch(report);
+};
+const applyDistance = () => {
+  const value = Number(ui.distanceValue.value);
+  if (!ui.distanceValue.value || !ui.distanceValue.validity.valid || !Number.isFinite(value)) { report('请输入 0.2–3.5 m 的距离'); return; }
+  updateFollow(mode === '04_09_body_tracking' ? 'follow_distance' : 'target_distance', value).then(() => {distanceEdited=false;}).catch(report);
+};
+ui.distanceSlider.oninput = () => {distanceEdited=true;ui.distanceValue.value=ui.distanceSlider.value;};
+ui.distanceSlider.onchange = applyDistance;
+ui.distanceValue.oninput = () => {distanceEdited=true;ui.distanceSlider.value=ui.distanceValue.value;};
+ui.distanceValue.onchange = applyDistance;
+ui.distanceValue.onkeydown = event => {if(event.key==='Enter'){event.preventDefault();ui.distanceValue.blur();}};
 ui.startBody.onclick = () => { try { start('start'); } catch (error) { report(error); } };
 ui.stopBody.onclick = () => { try { start('stop'); } catch (error) { report(error); } };
 ui.motionBody.onclick = () => setParameter('enable_motion', !motion);

@@ -1,0 +1,42 @@
+--- a/body_adapter.py
++++ b/body_adapter.py
+@@ -10,7 +10,7 @@
+ from visualization_msgs.msg import Marker, MarkerArray
+ 
+ 
+-GESTURE_CODES = {'okay': 11, 'open_palm': 5, 'one': 101, 'victory': 102, 'three': 103, 'four': 104}
++GESTURE_CODES = {'thumbs_up': 11, 'fist': 5, 'one': 101, 'victory': 102}
+ 
+ 
+ def body_targets(tracks, header, hands=(), hand_updated=False):
+@@ -74,7 +74,7 @@
+         self.input_pub = node.create_publisher(PerceptionTargets, '/vision/body_tracking/targets', 1)
+         node.create_subscription(String, '/vision/body_tracking/native_status', self.on_state, 1)
+         node.create_subscription(Twist, '/vision/body_tracking/cmd_vel', self.on_command, 1)
+-        node.operator_message = '1前进、2后退；3顺时针一圈、4逆时针一圈，转完停车；五指张掌停止'
++        node.operator_message = '大拇指跟随、握拳停止；1前进、2后退'
+         node.goal_marker_pub.publish(MarkerArray(markers=[Marker(header=Header(frame_id=node.global_frame),action=Marker.DELETEALL)]))
+ 
+     def on_state(self, message):
+@@ -128,8 +128,8 @@
+ 
+     def annotate(self, status):
+         status.update(controller_backend='body_tracking_cpp', strategy='native_body_tracking_depth_follow_pd',
+-                      gesture_controls={'okay':'lock_and_follow', 'open_palm':'stop_and_unlock',
+-                                        'one':'forward', 'victory':'backward', 'three':'spin_cw_once', 'four':'spin_ccw_once'},
++                      gesture_controls={'thumbs_up':'lock_and_follow', 'fist':'stop_and_unlock',
++                                        'one':'forward', 'victory':'backward'},
+                       state=self.state, track_id=self.track_id, body_tracking=self.native,
+                       motion_enabled=self.native.get('motion_enabled', self.node.enable_motion),
+                       follow_control_state=(self.native.get('control_mode', self.native.get('distance_mode', self.native['state'])) if self.state == 'TRACKING' or self.native.get('rotation_done') else self.native['state']), lock_source='official_body_tracking',
+--- a/core.py
++++ b/core.py
+@@ -46,6 +46,8 @@
+                 screen[4, 1] < screen[3, 1] < screen[2, 1])
+     if not any(extended) and thumb_up:
+         return 'thumbs_up'
++    if not any(extended) and not thumb_extended:
++        return 'fist'
+     return 'unknown'
+ 
+ 

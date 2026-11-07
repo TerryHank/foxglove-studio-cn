@@ -3,23 +3,48 @@
   'use strict';
   const CONTROL = '/vision/demo/control', STATUS = '/vision/demo/status';
   const RGB = '/camera/color/image_raw/compressed';
-  const sharedRgb=document.createElement('img');
-  sharedRgb.alt='104 实时 RGB 图像';
-  sharedRgb.draggable=false;
+  const RENDER_MODE='latest-canvas';
+
+  const frameNow=()=>performance.timeOrigin+performance.now();
+  let timingRows=[];
+  function frameTiming(trace,decoded) {
+    requestAnimationFrame(()=>{
+      timingRows.push([trace.source,trace.received,trace.started,decoded,frameNow()].map(n=>Number(n.toFixed(3))));
+      if(timingRows.length>=20){console.info('RGB_TIMING '+JSON.stringify({mode:RENDER_MODE,link:window.__followLink,rows:timingRows}));timingRows=[];}
+    });
+  }
+  const sharedRgb=document.createElement('canvas');
   sharedRgb.dataset.ui='kcfPreview';
   sharedRgb.hidden=true;
-  sharedRgb.onload=()=>{
-    sharedRgb.frameStamp=sharedRgb.pendingStamp;
-    sharedRgb.hidden=false;
-    sharedRgb.dispatchEvent(new Event('rgb-frame'));
-  };
+  sharedRgb.draggable=false;
+  Object.defineProperties(sharedRgb,{
+    naturalWidth:{get:()=>sharedRgb.width},naturalHeight:{get:()=>sharedRgb.height}
+  });
+  const bitmapContext=sharedRgb.getContext('bitmaprenderer');
+  const imageContext=bitmapContext?null:sharedRgb.getContext('2d');
+  let pendingRgb,decodingRgb=false;
+  async function drawLatestRgb() {
+    if(decodingRgb||!pendingRgb)return;
+    decodingRgb=true;
+    const frame=pendingRgb;pendingRgb=undefined;frame.started=frameNow();
+    try {
+      const bitmap=await createImageBitmap(new Blob([frame.message.data],{type:'image/jpeg'}));
+      const resized=sharedRgb.width!==bitmap.width||sharedRgb.height!==bitmap.height;
+      if(resized){sharedRgb.width=bitmap.width;sharedRgb.height=bitmap.height;}
+      if(bitmapContext)bitmapContext.transferFromImageBitmap(bitmap);
+      else {imageContext.drawImage(bitmap,0,0);bitmap.close();}
+      sharedRgb.frameStamp=frame.source/1000;
+      sharedRgb.hidden=false;
+      sharedRgb.dispatchEvent(new Event('rgb-frame'));
+      if(resized)sharedRgb.dispatchEvent(new Event('load'));
+      frameTiming(frame,frameNow());
+    } catch(error) {console.warn('RGB decode failed: '+String(error));}
+    finally {decodingRgb=false;if(pendingRgb)drawLatestRgb();}
+  }
   function updateRgb(message) {
     const stamp=message.header?.stamp;
-    const url=URL.createObjectURL(new Blob([message.data],{type:'image/jpeg'}));
-    const old=sharedRgb.src;
-    sharedRgb.pendingStamp=stamp?Number(stamp.sec)+Number(stamp.nanosec??stamp.nsec??0)*1e-9:0;
-    sharedRgb.src=url;
-    if(old)URL.revokeObjectURL(old);
+    pendingRgb={message,source:stamp?Number(stamp.sec)*1000+Number(stamp.nanosec??stamp.nsec??0)*1e-6:0,received:frameNow()};
+    drawLatestRgb();
   }
   const COLOR_PICK='/vision/color/pick', KCF_ROI='/omnifleet_vision/kcf/roi', PANEL='local.omnifleet-vision.demo!functional-control';
   function initKcfPanel(context) {
