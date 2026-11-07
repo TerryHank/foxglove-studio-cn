@@ -7,14 +7,74 @@ const ui=Object.fromEntries([...document.querySelectorAll('[id]')].map(el=>[el.i
 const CONTROL='/vision/demo/control',STATUS='/vision/demo/status',MOBILE='/vision/mobile/control',DETECTIONS='/vision/mobile/detections',PERSON='/vision/person_follow/control',BODY='/vision/body_tracking/status',KCF='/omnifleet_vision/kcf/status',RGB='/camera/color/image_raw/compressed';
 const titles={color:'颜色识别与跟随',shape:'形状识别与跟随',codes:'二维码识别与跟随',human:'人体识别与跟随'};
 const labels={red:'红色',green:'绿色',blue:'蓝色',yellow:'黄色',rectangle:'矩形',circle:'圆形',triangle:'三角形'};
+const filterLabels={color:['red','green','blue','yellow'],shape:['rectangle','circle','triangle'],codes:['QR','AprilTag']};
+const selectedFilters=Object.fromEntries(Object.entries(filterLabels).map(([key,items])=>[key,new Set(items)]));
 const channels=new Map(),subscriptions=new Map(),publishers=new Map(),services=new Map(),calls=new Map();
 let client,socket,connected=false,closed=false,callId=0,revision=0,mode='color',runningCase,runningPhase,runningRequest,preparation,editingDistance=false;
-let context,cleanup,picker,canvas,preview,detections=[],detectedFrame,detectedAt=0,frameSize=[640,480],selectedLabel='',motion=false,lockedTrack;
+let context,cleanup,picker,canvas,preview,detections=[],detectedFrame,detectedAt=0,frameSize=[640,480],selectedLabel='',motion=false,motionIntent,lockedTrack;
 const report=error=>{ui.feedback.textContent=error.message||String(error);};
 const caseId=()=>mode==='human'?'04_09_body_tracking':'02_07_kcf';
 const serviceName=()=>mode==='human'?'/body_tracking_104/horizon_tracking_RobotCmdVel/set_parameters':'/kcf_follower/set_parameters';
 const definitions=schema=>parse(schema,{ros2:true});
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+const visibleDetections=()=>mode==='human'?detections:detections.filter(item=>selectedFilters[mode].has(item.label));
+function sendFilters(){
+ if(mode==='human')publish(MOBILE,{op:'mode',mode:'off'});
+ else publish(MOBILE,{op:'mode',mode,labels:[...selectedFilters[mode]]});
+}
+function updateFilterChecks(){
+ const selected=selectedFilters[mode];
+ ui.filterAll.checked=selected.size===filterLabels[mode].length;
+ ui.filterAll.indeterminate=selected.size>0&&!ui.filterAll.checked;
+ for(const input of ui.filterItems.querySelectorAll('input'))input.checked=selected.has(input.value);
+ ui.filterToggle.textContent=`识别项 ${selected.size}/${filterLabels[mode].length} ⌄`;
+}
+function filtersChanged(){
+ updateFilterChecks();
+ draw();
+ if(connected)try{sendFilters();}catch(error){report(error);}
+}
+function renderFilters(){
+ const options=filterLabels[mode];
+ ui.filterMenu.hidden=!options;
+ if(!options)return;
+ ui.filterItems.replaceChildren(...options.map(key=>{
+  const row=document.createElement('label'),input=document.createElement('input');
+  input.type='checkbox';input.value=key;
+  input.onchange=()=>{if(input.checked)selectedFilters[mode].add(key);else selectedFilters[mode].delete(key);filtersChanged();};
+  row.append(input,labels[key]||key);
+  return row;
+ }));
+ updateFilterChecks();
+}
+function setMotion(enabled){
+ motion=enabled;
+ ui.toggleFollow.setAttribute('aria-pressed',String(enabled));
+}
+const menus=[[ui.targetToggle,ui.targetOptions],[ui.filterToggle,ui.filterOptions]];
+function closeMenus(){
+ for(const [button,panel] of menus){panel.hidden=true;button.setAttribute('aria-expanded','false');}
+}
+for(const [button,panel] of menus)button.onclick=()=>{
+ const opening=panel.hidden;
+ closeMenus();
+ if(!opening)return;
+ const rect=button.getBoundingClientRect();
+ const width=Math.min(window.innerWidth-16,Math.max(rect.width,176));
+ const below=window.innerHeight-rect.bottom-12,above=rect.top-12;
+ panel.style.width=`${width}px`;
+ panel.style.left=`${Math.min(rect.left,window.innerWidth-width-8)}px`;
+ panel.style.maxHeight=`${Math.max(below,above)}px`;
+ panel.hidden=false;
+ panel.style.top=`${below<panel.offsetHeight&&above>below?rect.top-panel.offsetHeight-4:rect.bottom+4}px`;
+ button.setAttribute('aria-expanded','true');
+};
+document.addEventListener('pointerdown',event=>{
+ if(!menus.some(([button,panel])=>button.contains(event.target)||panel.contains(event.target)))closeMenus();
+});
+document.addEventListener('keydown',event=>{if(event.key==='Escape')closeMenus();});
+window.addEventListener('resize',closeMenus);
+ui.controls.addEventListener('scroll',closeMenus);
 function subscribe(){
  const wanted=new Set([RGB,STATUS,DETECTIONS,...(mode==='human'?[BODY]:[KCF])]);
  for(const[id,item]of subscriptions)if(!wanted.has(item.topic)){client.unsubscribe(id);subscriptions.delete(id);}
@@ -49,12 +109,14 @@ async function parameter(name,value,prepare=true){
  const entry={type:typeof value==='boolean'?1:3,bool_value:typeof value==='boolean'?value:false,integer_value:0,double_value:typeof value==='number'?value:0,string_value:'',byte_array_value:[],bool_array_value:[],integer_array_value:[],double_array_value:[],string_array_value:[]};
  const reply=await callService(service,{parameters:[{name,value:entry}]});
  if(!reply.results?.length||reply.results.some(item=>!item.successful))throw Error(reply.results?.map(item=>item.reason).join('; ')||'控制器未接受参数');
+ if(current!==revision||selected!==mode)return;
+ if(name==='enable_motion')setMotion(value);
  ui.feedback.textContent=name==='enable_motion'?(value?'底盘跟随已开启':'底盘跟随已关闭'):`跟随距离已设为 ${value.toFixed(2)} m`;
 }
 function draw(){
  if(!canvas)return;const pen=canvas.getContext('2d');pen.clearRect(0,0,canvas.width,canvas.height);if(Date.now()-detectedAt>1500)return;
  const sx=canvas.width/frameSize[0],sy=canvas.height/frameSize[1];pen.font='15px sans-serif';pen.lineWidth=2;
- for(const item of [...detections,...(lockedTrack?[lockedTrack]:[])]){const[x,y,w,h]=item.bbox,text=labels[item.label]||item.label;pen.strokeStyle=item.selected?'#79d6aa':'#b19aef';pen.strokeRect(x*sx,y*sy,w*sx,h*sy);
+ for(const item of [...visibleDetections(),...(lockedTrack?[lockedTrack]:[])]){const[x,y,w,h]=item.bbox,text=labels[item.label]||item.label;pen.strokeStyle=item.selected?'#79d6aa':'#b19aef';pen.strokeRect(x*sx,y*sy,w*sx,h*sy);
  const caption=text+(item.text?' '+item.text:''),ty=Math.max(18,y*sy-5),width=pen.measureText(caption).width;pen.fillStyle='#15151add';pen.fillRect(x*sx,ty-17,width+8,22);pen.fillStyle=pen.strokeStyle;pen.fillText(caption,x*sx+4,ty);}
 }
 function mount(){
@@ -67,18 +129,20 @@ function mount(){
  canvas.onpointerup=event=>{
   if(!down)return;const start=down;down=undefined;if(Math.hypot(start[0]-event.clientX,start[1]-event.clientY)>8||Date.now()-detectedAt>1500)return;
   const box=canvas.getBoundingClientRect(),x=(event.clientX-box.x)*frameSize[0]/box.width,y=(event.clientY-box.y)*frameSize[1]/box.height;
-  const hits=detections.filter(item=>x>=item.bbox[0]&&y>=item.bbox[1]&&x<=item.bbox[0]+item.bbox[2]&&y<=item.bbox[1]+item.bbox[3]).sort((a,b)=>a.bbox[2]*a.bbox[3]-b.bbox[2]*b.bbox[3]);
+  const hits=visibleDetections().filter(item=>x>=item.bbox[0]&&y>=item.bbox[1]&&x<=item.bbox[0]+item.bbox[2]&&y<=item.bbox[1]+item.bbox[3]).sort((a,b)=>a.bbox[2]*a.bbox[3]-b.bbox[2]*b.bbox[3]);
   if(!hits.length){report('请点击画面中的识别框');return;}const target=hits[0];
   try{if(mode==='human')publish(PERSON,{op:'lock',track_id:target.track_id});else publish(MOBILE,{id:crypto.randomUUID(),op:'select',frame_id:detectedFrame,index:target.index});ui.feedback.textContent='已提交目标绑定，等待机器人确认…';}catch(error){report(error);}
  };
  cleanup=()=>{observer.disconnect();preview.removeEventListener('load',resize);preview.removeEventListener('rgb-frame',draw);dispose();ui.stage.replaceChildren();};resize();if(connected)subscribe();
 }
 async function selectMode(value){
+ closeMenus();
  const previous=mode,current=++revision;
- if(motion&&previous!==value){try{await parameter('enable_motion',false,false);}catch(error){report(error);return;}}
+ if((motion||motionIntent?.enabled)&&previous!==value){try{await parameter('enable_motion',false,false);}catch(error){report(error);return;}}
  if(current!==revision)return;mode=value;editingDistance=false;mount();ui.targetName.textContent=titles[mode];
- document.querySelectorAll('[data-mode]').forEach(button=>button.setAttribute('aria-selected',String(button.dataset.mode===mode)));ui.targetOptions.hidden=true;ui.targetToggle.setAttribute('aria-expanded','false');
- try{publish(MOBILE,{op:'mode',mode:mode==='human'?'off':mode});await prepareCase(true);if(current!==revision)return;ui.feedback.textContent=mode==='human'?'点击人物框或竖起大拇指绑定':'点击识别框绑定跟随目标';}catch(error){if(current===revision)report(error);}
+ renderFilters();
+ document.querySelectorAll('[data-mode]').forEach(button=>button.setAttribute('aria-selected',String(button.dataset.mode===mode)));
+ try{sendFilters();await prepareCase(true);if(current!==revision)return;ui.feedback.textContent=mode==='human'?'点击人物框或竖起大拇指绑定':'点击识别框绑定跟随目标';}catch(error){if(current===revision)report(error);}
 }
 const RADIO_BRIDGE='ws://192.168.144.108:8765',WIFI_BRIDGE='ws://192.168.3.104:8765';
 const requested=new URLSearchParams(location.search).get('bridge')||RADIO_BRIDGE;
@@ -98,7 +162,9 @@ function connect(){
   if(channel.topic===RGB){window.FoxgloveVision.updateRgb(message);return;}const state=JSON.parse(message.data);
   if(channel.topic===STATUS){runningCase=state.case_id;runningPhase=state.phase;runningRequest=state.request_id;if(state.phase==='ERROR')report(state.message);return;}
   if(channel.topic===DETECTIONS){if(state.error){report(state.error);return;}if(state.selection){selectedLabel=(labels[state.selection.label]||state.selection.label)+(state.selection.text?' '+state.selection.text:'');ui.feedback.textContent='已交给跟踪器：'+selectedLabel;return;}if(state.mode!==mode)return;detections=state.detections.map((item,index)=>({...item,index}));detectedFrame=state.frame_id;detectedAt=Date.now();frameSize=[state.width,state.height];draw();return;}
-  const distance=mode==='human'?state.body_tracking?.target_distance_m??state.follow_distance_m:state.target_distance_m;motion=mode==='human'?state.body_tracking?.motion_enabled===true:state.enable_motion===true;
+  const distance=mode==='human'?state.body_tracking?.target_distance_m??state.follow_distance_m:state.target_distance_m;
+  const enabled=mode==='human'?state.body_tracking?.motion_enabled:state.enable_motion;
+  if(typeof enabled==='boolean')setMotion(enabled);
   if(!editingDistance&&Number.isFinite(distance))ui.distanceSlider.value=ui.distanceValue.value=distance;
   if(channel.topic===BODY&&mode==='human'){frameSize=state.rgb_resolution||[640,480];detectedAt=Date.now();detections=(state.tracks||[]).map(item=>({...item,track_id:item.id??item.track_id,label:'人体 ID '+(item.id??item.track_id),bbox:[item.bbox[0],item.bbox[1],item.bbox[2]-item.bbox[0],item.bbox[3]-item.bbox[1]],selected:(item.id??item.track_id)===state.track_id}));if(state.track_id!=null)ui.feedback.textContent=`已绑定人物 ID ${state.track_id} · ${motion?'底盘已开启':'底盘已关闭'}`;}
   if(channel.topic===KCF&&mode!=='human'){
@@ -110,8 +176,17 @@ function connect(){
  client.on('status',status=>{if(status.level>0)report(status.message);});client.on('error',()=>report('连接机器人失败'));
  client.on('close',()=>{clearTimeout(timer);if(autoLink&&(!connected||selectedBridge===RADIO_BRIDGE))selectedBridge=selectedBridge===WIFI_BRIDGE?RADIO_BRIDGE:WIFI_BRIDGE;connected=false;report('连接中断，正在重连…');for(const call of calls.values()){clearTimeout(call.timer);call.reject(Error('连接已断开'));}calls.clear();if(!closed)setTimeout(connect,autoLink?400:2000);});
 }
-ui.targetToggle.onclick=()=>{ui.targetOptions.hidden=!ui.targetOptions.hidden;ui.targetToggle.setAttribute('aria-expanded',String(!ui.targetOptions.hidden));};document.querySelectorAll('[data-mode]').forEach(button=>button.onclick=()=>selectMode(button.dataset.mode));
-ui.enableFollow.onclick=()=>parameter('enable_motion',true).catch(report);ui.disableFollow.onclick=()=>{revision++;parameter('enable_motion',false,false).catch(report);};
+document.querySelectorAll('[data-mode]').forEach(button=>button.onclick=()=>selectMode(button.dataset.mode));
+ui.filterAll.onchange=()=>{selectedFilters[mode]=new Set(ui.filterAll.checked?filterLabels[mode]:[]);filtersChanged();};
+ui.toggleFollow.onclick=async()=>{
+ const request={enabled:!(motionIntent?.enabled??motion)};
+ motionIntent=request;
+ if(!request.enabled)revision++;
+ ui.toggleFollow.setAttribute('aria-busy','true');
+ try{await parameter('enable_motion',request.enabled,request.enabled);}
+ catch(error){if(motionIntent===request)report(error);}
+ finally{if(motionIntent===request){motionIntent=undefined;ui.toggleFollow.removeAttribute('aria-busy');}}
+};
 const applyDistance=()=>{const value=Number(ui.distanceValue.value);if(!ui.distanceValue.value||!ui.distanceValue.validity.valid){report('请输入 0.2–3.5 m 的距离');return;}parameter(mode==='human'?'follow_distance':'target_distance',value).then(()=>editingDistance=false).catch(report);};
 ui.distanceSlider.oninput=()=>{editingDistance=true;ui.distanceValue.value=ui.distanceSlider.value;};ui.distanceSlider.onchange=applyDistance;ui.distanceValue.oninput=()=>{editingDistance=true;ui.distanceSlider.value=ui.distanceValue.value;};ui.distanceValue.onchange=applyDistance;ui.distanceValue.onkeydown=event=>{if(event.key==='Enter'){event.preventDefault();ui.distanceValue.blur();}};
-window.addEventListener('pagehide',()=>{closed=true;socket?.close();});mount();connect();
+window.addEventListener('pagehide',()=>{closed=true;socket?.close();});renderFilters();mount();connect();

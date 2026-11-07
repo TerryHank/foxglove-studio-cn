@@ -10,13 +10,14 @@ from rclpy.qos import qos_profile_sensor_data
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image, RegionOfInterest
 from std_msgs.msg import String
-from detection import detect, select_detection
+from detection import LABELS, detect, select_detection
 
 
 class MobileVision(Node):
     def __init__(self):
         super().__init__('mobile_vision_detection')
         self.mode = 'off'
+        self.labels = ()
         self.latest = None
         self.lock = threading.Lock()
         self.frames = OrderedDict()
@@ -36,8 +37,12 @@ class MobileVision(Node):
     def control(self, message):
         try:
             request = json.loads(message.data)
-            if request.get('op') == 'mode' and request.get('mode') in ('off', 'color', 'shape', 'codes'):
-                self.mode = request['mode']
+            if request.get('op') == 'mode' and request.get('mode') in LABELS:
+                mode = request['mode']
+                labels = request.get('labels', LABELS[mode])
+                if not isinstance(labels, (list, tuple)) or any(label not in LABELS[mode] for label in labels):
+                    raise ValueError('识别项与当前模式不匹配')
+                self.mode, self.labels = mode, tuple(labels)
                 self.frames.clear()
             elif request.get('op') == 'select':
                 frame = self.frames.get(request.get('frame_id'))
@@ -60,7 +65,7 @@ class MobileVision(Node):
             self.serial += 1
             result = {'frame_id': self.serial, 'mode': self.mode, 'width': message.width, 'height': message.height,
                       'stamp': [message.header.stamp.sec, message.header.stamp.nanosec],
-                      'detections': detect(image, self.mode)}
+                      'detections': detect(image, self.mode, self.labels)}
             self.frames[self.serial] = {**result, 'received': time.monotonic()}
             while len(self.frames) > 8:
                 self.frames.popitem(last=False)

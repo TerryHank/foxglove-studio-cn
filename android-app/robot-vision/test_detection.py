@@ -11,6 +11,9 @@ class DetectionTests(unittest.TestCase):
             cv2.rectangle(image, (x, 80), (x+90, 180), color, -1)
         found = detect(image, 'color')
         self.assertEqual({item['label'] for item in found}, {'red', 'green', 'blue', 'yellow'})
+        self.assertEqual({item['label'] for item in detect(image, 'color', ['red', 'yellow'])},
+                         {'red', 'yellow'})
+        self.assertEqual(detect(image, 'color', []), [])
         frames = {9: {'detections': found}}
         self.assertIs(select_detection(frames, 9, 2), found[2])
         for frame, index in ((8, 0), (9, -1), (9, 99)):
@@ -22,6 +25,9 @@ class DetectionTests(unittest.TestCase):
         cv2.circle(image, (300, 140), 60, (0, 0, 0), -1)
         cv2.fillPoly(image, [np.array([[450, 210], [520, 60], [590, 210]])], (0, 0, 0))
         self.assertEqual({item['label'] for item in detect(image, 'shape')}, {'rectangle', 'circle', 'triangle'})
+        self.assertEqual([item['label'] for item in detect(image, 'shape', ['circle'])], ['circle'])
+        self.assertEqual({item['label'] for item in detect(image, 'shape', ['triangle', 'rectangle'])},
+                         {'triangle', 'rectangle'})
 
     def test_qr_and_multiple_apriltags_in_same_frame(self):
         image = np.full((400, 900, 3), 255, np.uint8)
@@ -38,6 +44,8 @@ class DetectionTests(unittest.TestCase):
         result = detect(image, 'codes')
         self.assertIn(('QR', 'robot104://demo'), {(item['label'], item['text']) for item in result})
         self.assertEqual({item['text'] for item in result if item['label'] == 'AprilTag'}, {'0', '7'})
+        self.assertEqual([item['label'] for item in detect(image, 'codes', ['QR'])], ['QR'])
+        self.assertEqual([item['label'] for item in detect(image, 'codes', ['AprilTag'])], ['AprilTag'] * 2)
         cv2.imwrite('/tmp/robot104-qr-apriltag-proof.png', image)
 
 
