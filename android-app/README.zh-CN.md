@@ -35,6 +35,8 @@ Android 首次启动采用 `android-app/default-layout.json` 中的 104 三维�
 
 104 新增识别服务 `omnifleet-mobile-vision.service`，源码及部署脚本位于 `android-app/robot-vision/`。在 104 上运行 `sudo python3 install.py`，会安装 `/opt/omnifleet-mobile-vision/`，对现有人体适配器应用 `person-click.patch`（备份原件），并在 Bridge 既有发布列表加入 `/vision/mobile/control`。服务默认不处理图像，App 选择颜色/形状/二维码模式时启用；跟随仍复用现有 NanoTrack、深度和 C++ 控制器。依赖机器人已有的 OpenCV aruco、pyzbar、rclpy、cv_bridge。测试脚本涵盖四色、三形状、同帧 QR/多个 AprilTag、人物 ID 点击和换人解绑流程；这些不代表现场行驶验收。
 
+126 的人体空白处解绑需要同步更新 App 和车端。在已安装人物点选的 126 工作区根目录检查并应用 `android-app/robot-vision/person-cancel-126.patch`，重新构建 `body_tracking`，再重新进入人体案例。补丁复用 App 的 `/vision/person_follow/control` 入口。
+
 跟踪画面代码来自 `backup/shierzhong-foxglove-20261105` 的 `5ddcccf`，对应十二中 `Foxglove－104 视觉案例.lnk` 实际 runtime。`android-app/vision/vision-reference.js` 保留其中 RGB、目标框与触屏选框实现，安卓适配使用同一 `/vision/demo/control`、结果话题和 ROS 参数服务，不依赖学校电脑在线。设置侧栏在安卓页面启动时保持收起。
 
 104 相机配套修复记录在 `android-app/vision/robot104-camera.patch`：Orbbec 驱动只启用 raw 图像发布插件，JPEG 继续由 `gemini_pro_rgb_jpeg` 独立进程发布。这样避免摄像头进程内 OpenCV JPEG 压缩调用 Jetson `libnvjpeg.so` 导致崩溃。现场原文件保留 `.before-android-vision-20261107-010804` 备份。
