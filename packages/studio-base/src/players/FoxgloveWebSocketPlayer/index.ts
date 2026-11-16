@@ -96,7 +96,7 @@ type MessageDefinitionMap = Map<string, MessageDefinition>;
  */
 const CURRENT_FRAME_MAXIMUM_SIZE_BYTES = 400 * 1024 * 1024;
 const ANDROID_RADIO_BRIDGE = "ws://192.168.144.108:8765";
-const ANDROID_WIFI_BRIDGE = "ws://192.168.3.104:8765";
+const ANDROID_WIFI_BRIDGE = ANDROID_RADIO_BRIDGE;
 
 export default class FoxgloveWebSocketPlayer implements Player {
   readonly #sourceId: string;
@@ -172,9 +172,7 @@ export default class FoxgloveWebSocketPlayer implements Player {
     sourceId: string;
   }) {
     this.#metricsCollector = metricsCollector;
-    this.#androidAutoLink =
-      url === ANDROID_RADIO_BRIDGE &&
-      globalThis.navigator?.userAgent.includes(" FoxgloveAndroid") === true;
+    this.#androidAutoLink = false;
     this.#url = this.#androidAutoLink ? ANDROID_WIFI_BRIDGE : url;
     this.#name = url;
     this.#metricsCollector.playerConstructed();

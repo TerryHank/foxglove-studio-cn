@@ -6,7 +6,7 @@ import DiffIcon from "@mui/icons-material/Difference";
 import DiffOutlinedIcon from "@mui/icons-material/DifferenceOutlined";
 import UnfoldLessIcon from "@mui/icons-material/UnfoldLess";
 import UnfoldMoreIcon from "@mui/icons-material/UnfoldMore";
-import { IconButton, MenuItem, Select, SelectChangeEvent } from "@mui/material";
+import { IconButton, MenuItem, Select, SelectChangeEvent, Typography } from "@mui/material";
 import { makeStyles } from "tss-react/mui";
 
 import { Topic } from "@foxglove/studio";
@@ -70,6 +70,20 @@ function ToolbarComponent(props: Props): JSX.Element {
   } = props;
 
   const { classes, cx } = useStyles();
+
+  if (
+    topicPath === "/voltage.data" &&
+    !diffEnabled &&
+    navigator.userAgent.includes("FoxgloveAndroid")
+  ) {
+    return (
+      <PanelToolbar className={classes.toolbar}>
+        <Typography noWrap variant="body2" color="text.secondary" flex="auto">
+          电池电压
+        </Typography>
+      </PanelToolbar>
+    );
+  }
 
   return (
     <>

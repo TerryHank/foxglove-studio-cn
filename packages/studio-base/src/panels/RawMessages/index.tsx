@@ -48,6 +48,7 @@ import { DiffSpan } from "./DiffSpan";
 import DiffStats from "./DiffStats";
 import MaybeCollapsedValue from "./MaybeCollapsedValue";
 import Metadata from "./Metadata";
+import { NavigationSpeedControl } from "./NavigationSpeedControl";
 import Value from "./Value";
 import {
   ValueAction,
@@ -352,6 +353,35 @@ function RawMessages(props: Props) {
   );
 
   const renderSingleTopicOrDiffOutput = useCallback(() => {
+    if (
+      topicPath === "/voltage.data" &&
+      !diffEnabled &&
+      navigator.userAgent.includes("FoxgloveAndroid")
+    ) {
+      const voltage = baseItem?.queriedData[0]?.value;
+      return (
+        <Stack flex="auto" justifyContent="space-between" overflowY="auto">
+          <Typography
+            variant="h1"
+            color="text.primary"
+            data-testid="battery-voltage-readout"
+            sx={{
+              fontSize: 40,
+              fontWeight: 700,
+              lineHeight: 1.2,
+              fontVariantNumeric: "tabular-nums",
+              whiteSpace: "nowrap",
+              px: 2,
+              pt: 1,
+            }}
+          >
+            {typeof voltage === "number" && Number.isFinite(voltage) ? `${voltage.toFixed(1)} V` : "—"}
+          </Typography>
+          <NavigationSpeedControl />
+        </Stack>
+      );
+    }
+
     const shouldExpandNode = (keypath: (string | number)[]) => {
       if (expansion === "all") {
         return true;

@@ -113,7 +113,7 @@ public final class RobotWifiActivity extends Activity {
     }
 
     private void scan() {
-        busy(true); message.setText("正在通过接收机读取 104 的热点列表…");
+        busy(true); message.setText("正在通过接收机读取机器人的热点列表…");
         worker.execute(() -> {
             try {
                 JSONObject state = request("GET", "/wifi/status", null);

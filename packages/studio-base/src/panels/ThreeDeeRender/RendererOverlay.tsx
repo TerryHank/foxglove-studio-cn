@@ -163,20 +163,29 @@ export function RendererOverlay(props: Props): JSX.Element {
   // of candidate objects to select
   const clickedObjects = useMemo<MouseEventObject[]>(
     () =>
-      selectedRenderables.map((selection) => ({
-        object: {
-          pose: selection.renderable.pose,
-          scale: selection.renderable.scale,
-          color: undefined,
-          interactionData: {
-            topic: selection.renderable.name,
-            highlighted: undefined,
-            renderable: selection.renderable,
+      selectedRenderables.map((selection) => {
+        const { renderable } = selection;
+        const [kind, id] = renderable.userData.settingsPath;
+        const name =
+          kind === "layers" && id != undefined
+            ? renderer?.config.layers[id]?.label?.replace(/^\d{3}\s+(?=OmniFleet T2)/, "") ||
+              "自定义图层"
+            : renderable.name;
+        return {
+          object: {
+            pose: renderable.pose,
+            scale: renderable.scale,
+            color: undefined,
+            interactionData: {
+              topic: name,
+              highlighted: undefined,
+              renderable,
+            },
           },
-        },
-        instanceIndex: selection.instanceIndex,
-      })),
-    [selectedRenderables],
+          instanceIndex: selection.instanceIndex,
+        };
+      }),
+    [renderer, selectedRenderables],
   );
 
   // Once a single renderable is selected, convert it to the SelectionObject

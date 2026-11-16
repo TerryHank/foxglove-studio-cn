@@ -86,7 +86,7 @@
       <label>与物体保持距离：<strong data-ui=kcfActualDistance>等待读回</strong>
         <span class="vd-row"><input data-ui=kcfDistance type=range min=0.2 max=3.5 step=0.05 value=2 aria-label="物体跟随距离滑块"><input data-ui=kcfDistanceNumber type=number min=0.2 max=3.5 step=0.05 value=2 aria-label="物体跟随距离米"></span></label>
       <button data-ui=kcfApplyDistance>应用跟随距离</button><p data-ui=kcfDistanceReply></p>
-      <small>单位米，范围大于0.2且小于3.5。输入后按回车、点击应用或松开滑块生效，无需重选目标。成功设置后永久保存在104，重启读取本案例上一次的值，各案例独立保存。</small></div>
+      <small>单位米，范围大于0.2且小于3.5。输入后按回车、点击应用或松开滑块生效，无需重选目标。成功设置后永久保存在机器人端，重启读取本案例上一次的值，各案例独立保存。</small></div>
 `;
     context.panelElement.append(el);
     const ui={};el.querySelectorAll('[data-ui]').forEach(item=>{ui[item.dataset.ui]=item;item.dataset.testid='vision-'+item.dataset.ui;});
@@ -132,7 +132,7 @@
         pickPendingId=root.crypto?.randomUUID?.()||String(Date.now());colorBusy=true;pendingColor=undefined;renderColor();
         try{context.publish(COLOR_PICK,{data:JSON.stringify({id:pickPendingId,op:'clear'})});ui.colorReply.textContent='正在清除跟踪并停车…';}
         catch(error){colorBusy=false;pickPendingId=undefined;renderColor();ui.colorReply.textContent='清除失败：'+error.message;return;}
-        clearTimeout(pickTimer);const id=pickPendingId;pickTimer=setTimeout(()=>{if(pickPendingId===id){pickPendingId=undefined;colorBusy=false;renderColor();ui.colorReply.textContent='清除请求未收到104确认，请检查连接';}},5000);
+        clearTimeout(pickTimer);const id=pickPendingId;pickTimer=setTimeout(()=>{if(pickPendingId===id){pickPendingId=undefined;colorBusy=false;renderColor();ui.colorReply.textContent='清除请求未收到机器人确认，请检查连接';}},5000);
       };
     }
     const stringType={datatypes:new Map([['std_msgs/msg/String',{definitions:[{name:'data',type:'string',isArray:false,isComplex:false}]}]])};
@@ -141,7 +141,7 @@
     function send(op){
       const config=root.foxgloveDemoControl?.layout?.()?.data?.configById?.[PANEL];
       const parameters=config?.parametersByCase?.[caseId]||{enable_motion:marker||color?'false':'true'};
-      try{context.publish(CONTROL,{data:JSON.stringify({id:root.crypto?.randomUUID?.()||String(Date.now()),op,case_id:caseId,parameters})});ui.kcfReply.textContent=op==='start'?'已提交开始跟踪，等待104状态…':'已提交停止跟随…';}
+      try{context.publish(CONTROL,{data:JSON.stringify({id:root.crypto?.randomUUID?.()||String(Date.now()),op,case_id:caseId,parameters})});ui.kcfReply.textContent=op==='start'?'已提交开始跟踪，等待机器人状态…':'已提交停止跟随…';}
       catch(error){ui.kcfReply.textContent='请求发送失败：'+error.message;}
     }
     ui.start.onclick=()=>send('start');ui.stop.onclick=()=>send('stop');
@@ -160,7 +160,7 @@
           const data=JSON.parse(JSON.stringify(current.data));
           const config=data.configById[PANEL];config.parametersByCase??={};config.parametersByCase[caseId]??={};
           config.parametersByCase[caseId].enable_motion=String(value);
-          api.setLayout(current.name||'104 视觉功能演示',data);
+          api.setLayout(current.name||'视觉功能演示',data);
         }
         kcfPendingMotion=value;
         ui.kcfMotionReply.textContent='参数已接受，等待控制器状态确认…';
@@ -226,7 +226,7 @@
         event.preventDefault();const [x,y]=kcfPoint(event);
         pickPendingId=root.crypto?.randomUUID?.()||String(Date.now());colorBusy=true;pendingColor=undefined;renderColor();
         const request={id:pickPendingId,x,y,width:ui.kcfCanvas.width,height:ui.kcfCanvas.height,stamp:kcfImageStamp,...(caseId==='02_04_color'?{mode:'box'}:{})};
-        try{context.publish(COLOR_PICK,{data:JSON.stringify(request)});ui.colorReply.textContent='已提交点击位置，等待104锁定颜色目标…';}
+        try{context.publish(COLOR_PICK,{data:JSON.stringify(request)});ui.colorReply.textContent='已提交点击位置，等待机器人锁定颜色目标…';}
         catch(error){colorBusy=false;pickPendingId=undefined;renderColor();ui.colorReply.textContent='取色发送失败：'+error.message;return;}
         clearTimeout(pickTimer);const id=pickPendingId;pickTimer=setTimeout(()=>{if(pickPendingId===id){pickPendingId=undefined;colorBusy=false;renderColor();ui.colorReply.textContent='取色请求未收到确认，请检查案例与连接';}},5000);
         return;
@@ -244,7 +244,7 @@
       if(width<=1||height<=1){ui.kcfReply.textContent='选框太小，请框住物体。';return;}
       const scale=(kcfSourceWidth||ui.kcfCanvas.width)/ui.kcfCanvas.width;
       const roi={x_offset:Math.round(x*scale),y_offset:Math.round(y*scale),width:Math.round(width*scale),height:Math.round(height*scale),do_rectify:false};
-      try{context.publish(KCF_ROI,roi);ui.kcfReply.textContent=`已提交选框 (${x},${y}) ${width}×${height}，等待104锁定。`;}
+      try{context.publish(KCF_ROI,roi);ui.kcfReply.textContent=`已提交选框 (${x},${y}) ${width}×${height}，等待机器人锁定。`;}
       catch(error){ui.kcfReply.textContent='选框发送失败：'+error.message;}
     };
     ui.kcfCanvas.onpointercancel=()=>{kcfDrag=undefined;};
@@ -284,7 +284,7 @@
               caseReady=true;
               syncRgb();
             }
-            if(manager.case_id===caseId&&['STARTING','STOPPING','ERROR','COMPLETED'].includes(manager.phase))ui.kcfReply.textContent=({STARTING:'正在104启动跟踪…',STOPPING:'正在停止跟随…',ERROR:'跟踪启动错误',COMPLETED:'跟踪进程已结束'})[manager.phase];
+            if(manager.case_id===caseId&&['STARTING','STOPPING','ERROR','COMPLETED'].includes(manager.phase))ui.kcfReply.textContent=({STARTING:'正在启动跟踪…',STOPPING:'正在停止跟随…',ERROR:'跟踪启动错误',COMPLETED:'跟踪进程已结束'})[manager.phase];
             else if(!manager.case_id&&['STOPPED','IDLE'].includes(manager.phase))ui.kcfReply.textContent='目标追踪案例已停止';
             else if(manager.case_id&&manager.case_id!==caseId)ui.kcfReply.textContent='目标物跟随未运行；当前案例 '+manager.case_id;
           }
@@ -326,7 +326,7 @@
               const value=kcf.target_distance_m;ui.kcfActualDistance.textContent=value.toFixed(2)+' m（控制器读回'+(kcf.distance_persistent?' · 已永久保存':'')+'）';
               if(kcfPendingDistance!==undefined&&Math.abs(value-kcfPendingDistance)<1e-6){
                 if(kcf.distance_persistent){kcfPendingDistance=undefined;kcfDistanceEdited=false;ui.kcfDistanceReply.textContent='已生效并永久保存：'+value.toFixed(2)+' m';}
-                else ui.kcfDistanceReply.textContent='距离已生效，等待104永久保存确认…';
+                else ui.kcfDistanceReply.textContent='距离已生效，等待机器人确认保存…';
               }
               if(!kcfDistanceEdited){ui.kcfDistance.value=ui.kcfDistanceNumber.value=value;}
             }

@@ -19,9 +19,9 @@ variants = [
     ('follow', '视觉跟随', 'VisionFollowActivity', '#7864C4', 'M20,44V24H40V32H28V44ZM68,24H88V44H80V32H68ZM20,64H28V76H40V84H20ZM80,64H88V84H68V76H80ZM54,38A16,16 0,1 0,54 70A16,16 0,1 0,54 38'),
 ]
 versions = {
-    'navigation': ('6', '1.3.2-low-latency'),
-    'wifi': ('3', '1.2-foxglove-theme'),
-    'follow': ('11', '1.8-object-session'),
+    'navigation': ('16', '1.3.2-low-latency-receiver-ui'),
+    'wifi': ('4', '1.2-foxglove-theme-receiver-ui'),
+    'follow': ('38', '1.8-object-session-receiver-ui'),
 }
 def run(*args, **kwargs):
     return subprocess.run([str(a) for a in args], check=True, **kwargs)
@@ -41,6 +41,11 @@ for name, label, activity, color, symbol in variants:
     if name == 'navigation':
         shutil.copytree(app / 'src/main/assets/www', assets, dirs_exist_ok=True,
                         ignore=shutil.ignore_patterns('vision-follow.*', 'vision-reference.js'))
+        shutil.copy2(app / 'scripts/navigation-startup.js', assets)
+        entry = assets / 'index.html'
+        html = entry.read_text(encoding='utf-8')
+        entry.write_text(html.replace('</body>', '<script src="./navigation-startup.js"></script></body>', 1),
+                         encoding='utf-8')
     elif name == 'follow':
         for file in ('vision-follow.html', 'vision-follow.js', 'vision-reference.js', 'LICENSE', 'NOTICE', 'NOTICE.android.txt'):
             shutil.copy2(app / 'src/main/assets/www' / file, assets / file)
