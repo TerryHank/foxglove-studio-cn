@@ -2,7 +2,6 @@ const { app, BrowserWindow, Menu, shell } = require("electron");
 const path = require("node:path");
 
 const APP_NAME = "Foxglove Studio 中文版";
-const BRIDGE_URL = "ws://localhost:8765";
 
 app.setName(APP_NAME);
 // Keep every runtime path ASCII-only. Some Electron/Chromium helpers and
@@ -83,12 +82,7 @@ function createWindow() {
   });
 
   const indexPath = path.join(process.resourcesPath, "app-web", "index.html");
-  void window.loadFile(indexPath, {
-    query: {
-      ds: "foxglove-websocket",
-      "ds.url": BRIDGE_URL,
-    },
-  });
+  void window.loadFile(indexPath);
 }
 
 app.whenReady().then(() => {
