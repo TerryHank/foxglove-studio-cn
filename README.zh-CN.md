@@ -9,7 +9,7 @@
 - 新增 Electron ARM64 桌面壳与 Debian 打包流程，结构参考 [Lichtblick](https://github.com/Lichtblick-Suite/lichtblick)。
 - 安装目录固定为纯 ASCII 路径 `/opt/Foxglove-Studio-CN`。
 - 用户配置目录固定为 `~/.config/foxglove-studio-cn`，避免中文运行路径兼容问题。
-- Windows默认连接 `ws://192.168.3.150:8765`；Linux默认连接同机的 `ws://localhost:8765`。
+- 普通启动沿用 Foxglove 的数据源选择页和原版初始布局。定制布局请在界面中导入。
 - 兼容 ROS 2 Humble `foxglove_bridge` 3.x 使用的 `foxglove.sdk.v1` 子协议。
 
 ## 安装

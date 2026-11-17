@@ -1,11 +1,7 @@
 const { app, BrowserWindow, Menu, shell, ipcMain } = require("electron");
 const path = require("node:path");
-const fs = require("node:fs");
 
 const APP_NAME = "Foxglove Studio 中文版";
-const BRIDGE_URL = process.platform === "win32"
-  ? "ws://10.0.0.106:8765"
-  : "ws://localhost:8765";
 let DEMO_CONTROL = process.argv.includes("--demo-control");
 let mainWindow;
 let demoControlStarted = false;
@@ -130,12 +126,7 @@ function createWindow() {
     ? path.join(process.resourcesPath, "app-web", "index.html")
     : path.join(__dirname, "../web/.webpack/index.html");
   void window.loadFile(indexPath, {
-    query: {
-      ds: "foxglove-websocket",
-      "ds.url": fs.existsSync(path.join(app.getPath("userData"), "joint-control-installed.json"))
-        ? "ws://127.0.0.1:8766" : BRIDGE_URL,
-      ...(DEMO_CONTROL ? { demoControl: "true" } : {}),
-    },
+    query: DEMO_CONTROL ? { demoControl: "true" } : {},
   });
 }
 
