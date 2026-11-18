@@ -130,6 +130,7 @@ export default class FoxgloveWebSocketPlayer implements Player {
   #endTime?: Time;
   /* The most recent published time, if available */
   #clockTime?: Time;
+  #remoteClockOffsetMs?: number;
   /* Flag indicating if the server publishes time messages */
   #serverPublishesTime = false;
 
@@ -212,6 +213,7 @@ export default class FoxgloveWebSocketPlayer implements Player {
     });
 
     this.#client.on("open", () => {
+      this.#remoteClockOffsetMs = undefined;
       if (this.#closed) {
         return;
       }
@@ -532,7 +534,13 @@ export default class FoxgloveWebSocketPlayer implements Player {
       this.#emitState();
     });
 
-    this.#client.on("message", ({ subscriptionId, data }) => {
+    this.#client.on("message", ({ subscriptionId, data, timestamp }) => {
+      if (globalThis.navigator?.userAgent.includes(" FoxgloveAndroid") && timestamp > 0n) {
+        // The handset can be offline with an incorrect date. The greatest offset
+        // comes from the least-delayed frame on this connection.
+        const offset = Number(timestamp) / 1e6 - performance.now();
+        this.#remoteClockOffsetMs = Math.max(this.#remoteClockOffsetMs ?? -Infinity, offset);
+      }
       const chanInfo = this.#resolvedSubscriptionsById.get(subscriptionId);
       if (!chanInfo) {
         const wasRecentlyCanceled = this.#recentlyCanceledSubscriptions.has(subscriptionId);
@@ -1202,7 +1210,13 @@ export default class FoxgloveWebSocketPlayer implements Player {
     // the server is connected. When the server is not connected, time stops.
     if (!this.#serverPublishesTime) {
       this.#clockTime =
-        this.#presence === PlayerPresence.PRESENT ? fromMillis(Date.now()) : this.#clockTime;
+        this.#presence === PlayerPresence.PRESENT
+          ? fromMillis(
+              this.#remoteClockOffsetMs == undefined
+                ? Date.now()
+                : performance.now() + this.#remoteClockOffsetMs,
+            )
+          : this.#clockTime;
     }
 
     return this.#clockTime ?? ZERO_TIME;

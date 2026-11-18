@@ -13,7 +13,7 @@
     "Image!camera": {
       "foxglovePanelTitle": "实时相机",
       "imageMode": {
-        "imageTopic": "/camera/color/image_raw/compressed",
+        "imageTopic": "/camera/color/receiver_display/compressed",
         "synchronize": false
       }
     },
@@ -60,21 +60,21 @@
         }
       },
       "topics": {
-        "/map": {
+        "/visualization/receiver_map": {
           "visible": true,
           "colorMode": "custom",
           "minColor": "#c2cbd880",
           "maxColor": "#596c8580",
           "unknownColor": "#ffffff00"
         },
-        "/global_costmap/costmap": {
+        "/visualization/receiver_global_costmap": {
           "visible": true,
           "colorMode": "custom",
           "minColor": "#fff2cc00",
           "maxColor": "#e9ad5a3d",
           "unknownColor": "#ffffff00"
         },
-        "/local_costmap/costmap": {
+        "/visualization/receiver_local_costmap": {
           "visible": true,
           "colorMode": "custom",
           "minColor": "#ffffff00",
@@ -210,7 +210,7 @@
           "colorMap": "turbo",
           "decayTime": 0
         },
-        "/visualization/slam_points_below_1m": {
+        "/visualization/receiver_slam_points_1hz": {
           "visible": true,
           "colorMode": "flat",
           "flatColor": "#ffffffff",
@@ -220,7 +220,7 @@
           "frameLocked": true,
           "colorField": "z"
         },
-        "/visualization/local_obstacle_points": {
+        "/visualization/receiver_obstacle_points_1hz": {
           "visible": true,
           "pointSize": 1.5,
           "colorMode": "colormap",

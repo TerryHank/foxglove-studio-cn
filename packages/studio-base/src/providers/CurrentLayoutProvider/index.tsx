@@ -42,6 +42,13 @@ const log = Logger.getLogger(__filename);
 
 export const MAX_SUPPORTED_LAYOUT_VERSION = 1;
 
+const receiverDisplayTopics = {
+  "/map": "/visualization/receiver_map",
+  "/global_costmap/costmap": "/visualization/receiver_global_costmap",
+  "/local_costmap/costmap": "/visualization/receiver_local_costmap",
+  "/visualization/slam_points_below_1m": "/visualization/receiver_slam_points_1hz",
+  "/visualization/local_obstacle_points": "/visualization/receiver_obstacle_points_1hz",
+};
 const legacyAndroidPanelTitlePrefix = /^\d{3}\s+(?=(?:三维地图与点云|实时相机|电池电压 \(V\))$)/;
 
 /**
@@ -146,10 +153,37 @@ export default function CurrentLayoutProvider({ children }: React.PropsWithChild
         for (const [id, config] of Object.entries(data.configById)) {
           const title = config.foxglovePanelTitle;
           const replacement =
-            typeof title === "string" ? title.replace(legacyAndroidPanelTitlePrefix, "") : undefined;
-          if (replacement != undefined && replacement !== title) {
+            typeof title === "string" ? title.replace(legacyAndroidPanelTitlePrefix, "") : title;
+          const originalTopics = _.isPlainObject(config.topics)
+            ? (config.topics as Record<string, unknown>)
+            : undefined;
+          let topics = originalTopics;
+          if (id.startsWith("3D!") && topics != undefined) {
+            for (const [original, receiver] of Object.entries(receiverDisplayTopics)) {
+              if (Object.prototype.hasOwnProperty.call(topics, original)) {
+                if (topics === originalTopics) {
+                  topics = { ...topics };
+                }
+                topics[receiver] ??= topics[original];
+                delete topics[original];
+              }
+            }
+          }
+          const imageMode = _.isPlainObject(config.imageMode)
+            ? (config.imageMode as Record<string, unknown>)
+            : undefined;
+          const receiverImageMode =
+            id.startsWith("Image!") && imageMode?.imageTopic === "/camera/color/image_raw/compressed"
+              ? { ...imageMode, imageTopic: "/camera/color/receiver_display/compressed" }
+              : imageMode;
+          if (replacement !== title || topics !== originalTopics || receiverImageMode !== imageMode) {
             configById ??= { ...data.configById };
-            configById[id] = { ...config, foxglovePanelTitle: replacement };
+            configById[id] = {
+              ...config,
+              ...(replacement === title ? {} : { foxglovePanelTitle: replacement }),
+              ...(topics === originalTopics ? {} : { topics }),
+              ...(receiverImageMode === imageMode ? {} : { imageMode: receiverImageMode }),
+            };
           }
         }
         if (configById) {
