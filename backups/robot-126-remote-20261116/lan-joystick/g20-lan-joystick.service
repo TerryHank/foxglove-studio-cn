@@ -1,0 +1,13 @@
+[Unit]
+Description=G20 GR01 LAN joystick to OmniFleet joystick velocity
+After=network-online.target omnifleet-local-navigation.service
+
+[Service]
+User=iecme
+EnvironmentFile=/etc/omnifleet_t2/robot.env
+ExecStart=/bin/bash -c 'source /home/iecme/omnifleet_ws/src/system/workspace_support/robot_fleet_env.bash && exec /usr/bin/python3 /home/iecme/g20-lan-joystick/link_joystick.py'
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

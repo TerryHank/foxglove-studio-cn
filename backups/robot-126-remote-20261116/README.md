@@ -1,5 +1,7 @@
 # 126 遥控器 App 备份
 
+2026-11-18 已从源码编译并实测 [G20 导航 v18](navigation-v18/robot-navigation-v18-lan.apk)，同时收录 [LAN 摇杆 v3 和 124 车端接收代码](lan-joystick/)。编译、签名、安装和接线见 [构建与恢复步骤](REBUILD.zh-CN.md)。原始 2026-11-16 快照如下。
+
 2026-11-16 通过 ADB 从 126 的 G20 遥控器读取三个独立 App。每个 APK 都是设备当前安装的原签名文件，可用本目录的 `SHA256SUMS.txt` 校验。
 
 | App | 包名 | versionCode | APK | 可重建源码包 |

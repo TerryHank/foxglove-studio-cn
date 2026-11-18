@@ -1,0 +1,2 @@
+9fdc10c1dd9668f2869f71ccfb096bff261b342f9f6b174fc62ffb5ef3e3e9f2  robot-navigation-v18-lan.apk
+d61ec3a3cea15cdda9f8a4a9d311599b9541c9c061fc879af4acb8f3fcb8bb73  verification.json
