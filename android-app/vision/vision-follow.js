@@ -4961,24 +4961,43 @@
   var objectDistanceMin = ui.distanceValue.min;
   var CONTROL = "/vision/demo/control";
   var STATUS = "/vision/demo/status";
+  var FOREGROUND_STATUS = "/vision/demo/g20_status";
   var MOBILE = "/vision/mobile/control";
   var DETECTIONS = "/vision/mobile/detections";
   var PERSON = "/vision/person_follow/control";
   var BODY = "/vision/body_tracking/status";
   var HAND_OVERLAY = "/vision/body_tracking/hand_overlay";
   var KCF = "/omnifleet_vision/kcf/status";
-  var RGB = "/camera/color/receiver_follow/compressed";
-  var fallbackRgb = "/camera/color/receiver_display/compressed";
-  var videoSocket, videoRetry;
-  var titles = { color: "颜色识别与跟随", shape: "形状识别与跟随", codes: "二维码识别与跟随", human: "人体跟随与骨骼控制" };
+  var RGB = "/camera/color/preview_rect/compressed";
+  var PREVIEW_POSE = "/vision/body_tracking/preview_pose";
+  const previewPoses = new Map(), previewSize = [640, 360];
+  const poseHoldMs = 180;
+  const posePresentationTimes = [];
+  let lastPosePresentationKey;
+  function matchedPreviewPose() {
+    const key = preview?.frameStampKey;
+    if (!key) return;
+    const exact = previewPoses.get(key);
+    if (exact?.tracks.length) return exact;
+    const frameTime = preview.frameStamp * 1000;
+    let nearest;
+    for (const pose of previewPoses.values()) {
+      const age = frameTime - pose.time;
+      if (pose.tracks.length && age >= 0 && age <= poseHoldMs && (!nearest || pose.time > nearest.time)) {
+        nearest = pose;
+      }
+    }
+    return nearest;
+  }
+  var videoSocket, videoRetry, controlRetry;
+  var titles = { color: "颜色识别与跟随", codes: "二维码识别与跟随", human: "人体跟随与骨骼控制" };
   var modeHelp = {
     color: "🎨 勾选颜色，点色块框绑定。",
-    shape: "🔺 勾选形状，点形状框绑定。",
     codes: "🔎 勾选 QR / AprilTag，点码框绑定。",
     human: "双手上举或点人物框绑定髋部跟随；双手交叉或点空白处停止。"
   };
-  var labels = { red: "红色", green: "绿色", blue: "蓝色", yellow: "黄色", rectangle: "矩形", circle: "圆形", triangle: "三角形" };
-  var filterLabels = { color: ["red", "green", "blue", "yellow"], shape: ["rectangle", "circle", "triangle"], codes: ["QR", "AprilTag"] };
+  var labels = { red: "红色", green: "绿色", blue: "蓝色", yellow: "黄色" };
+  var filterLabels = { color: ["red", "green", "blue", "yellow"], codes: ["QR", "AprilTag"] };
   var selectedFilters = Object.fromEntries(Object.entries(filterLabels).map(([key, items]) => [key, new Set(items)]));
   var channels = /* @__PURE__ */ new Map();
   var subscriptions = /* @__PURE__ */ new Map();
@@ -4989,6 +5008,11 @@
   var socket;
   var connected = false;
   var closed = false;
+  let foreground = !document.hidden;
+  let foregroundSince = performance.now();
+  const standaloneFollow = new URLSearchParams(location.search).get("standalone") === "1";
+  let foregroundSequence = Date.now();
+  let foregroundStatus, foregroundHandoff, foregroundSupported;
   var callId = 0;
   var revision = 0;
   var mode = "color";
@@ -4996,13 +5020,18 @@
   var lastModeKey = "omnifleet.follow.mode";
   var modeReadyAt = 0;
   var modeReady = false;
+  var nextMobileStatusAt = 0;
   var waitSerial = 0;
   var pendingModeKey = "omnifleet.follow.pendingMode";
   var pendingMode;
   try {
     const saved = JSON.parse(localStorage.getItem(pendingModeKey));
     if (saved && Object.prototype.hasOwnProperty.call(titles, saved.mode) &&
-        typeof saved.id === "string" && Number.isFinite(saved.deadline)) pendingMode = saved;
+        typeof saved.id === "string" && Number.isFinite(saved.deadline)) {
+      pendingMode = saved;
+    } else if (saved) {
+      localStorage.removeItem(pendingModeKey);
+    }
   } catch {}
 
   function requestMode(value) {
@@ -5052,9 +5081,6 @@
   var tagSideStored = localStorage.getItem(tagSideKey);
   var tagSideMm = Number(tagSideStored) || null;
   var tagPresets = new Set([50, 80, 100, 150, 210]);
-  function renderTagSize() {
-    ui.tagSizeSettings.hidden = mode !== "codes" || !selectedFilters.codes.has("AprilTag");
-  }
   function restoreTagSizeInput() {
     ui.tagSizePreset.value = tagSideMm == null ? "off" : tagPresets.has(tagSideMm) ? String(tagSideMm) : "custom";
     ui.tagSideMm.hidden = ui.tagSizePreset.value !== "custom";
@@ -5090,7 +5116,6 @@
         ...(mode === "codes" && tagSideStored !== null ? { tag_side_mm: tagSideMm } : {}) });
   }
   function updateFilterChecks() {
-    renderTagSize();
     const selected = selectedFilters[mode];
     ui.filterAll.checked = selected.size === filterLabels[mode].length;
     ui.filterAll.indeterminate = selected.size > 0 && !ui.filterAll.checked;
@@ -5130,7 +5155,6 @@
     ui.distanceLabel.textContent = mode === "human" ? "髋部跟随距离" : "跟随距离";
     ui.toggleFollow.textContent = motionLabel();
     if (mode === "human") renderHumanGuide();
-    renderTagSize();
     const options = filterLabels[mode];
     ui.filterMenu.hidden = !options;
     if (!options)
@@ -5189,7 +5213,7 @@
   window.addEventListener("resize", closeMenus);
   ui.controls.addEventListener("scroll", closeMenus);
   function subscribe() {
-    const wanted = /* @__PURE__ */ new Set([STATUS, DETECTIONS, ...mode === "human" ? [BODY, HAND_OVERLAY] : [KCF]]);
+    const wanted = new Set(foreground ? [STATUS, FOREGROUND_STATUS, DETECTIONS, BODY, HAND_OVERLAY, KCF] : [FOREGROUND_STATUS]);
     for (const [id, item] of subscriptions)
       if (!wanted.has(item.topic)) {
         client.unsubscribe(id);
@@ -5207,6 +5231,14 @@
       throw Error("机器人尚未连接");
     const channel = publishers.get(topic);
     client.sendMessage(channel.id, channel.writer.writeMessage({ data: JSON.stringify(request) }));
+  }
+  function askForMobileState() {
+    const now = performance.now();
+    if (now < nextMobileStatusAt ||
+        ![...subscriptions.values()].some((item) => item.topic === DETECTIONS))
+      return;
+    nextMobileStatusAt = now + 1000;
+    publish(MOBILE, { op: "status" });
   }
   function callService(name, request) {
     return new Promise((resolve, reject) => {
@@ -5227,6 +5259,8 @@
   async function prepareCase(request) {
     const attempt = socket, current = revision, target = caseId();
     if (!connected) return false;
+    if (foregroundHandoff) await foregroundHandoff;
+    if (!connected || socket !== attempt || current !== revision) return false;
     if (preparation) {
       try { await preparation; } catch {}
       if (!connected || socket !== attempt || current !== revision) return false;
@@ -5240,14 +5274,17 @@
     const work = (async () => {
       if (runningRequest === id && runningPhase === "ERROR")
         throw Error("车端识别案例启动失败，可重新选择该模式");
-      if (!joining && runningRequest !== id)
-        publish(CONTROL, { id, op: "start", case_id: target, warm: true, parameters: { enable_motion: "false" } });
+      let resendAt = 0;
       ui.feedback.textContent = "正在准备识别…";
-      while (connected && socket === attempt && current === revision) {
+      while (foreground && connected && socket === attempt && current === revision) {
         if (runningCase === target && runningPhase === "RUNNING") return true;
         if ((runningRequest === id || (joining && runningCase === target)) && runningPhase === "ERROR")
           throw Error("车端识别案例启动失败，可重新选择该模式");
         if (Date.now() >= deadline) throw Error("识别启动超时，可重新选择该模式");
+        if (!joining && runningRequest !== id && performance.now() >= resendAt) {
+          publish(CONTROL, { id, op: "start", case_id: target, warm: true, parameters: { enable_motion: "false" } });
+          resendAt = performance.now() + 1000;
+        }
         await delay(100);
       }
       return false;
@@ -5345,16 +5382,21 @@
     }
     pen.restore();
   }
-  var poseTracks = [], poseSeenAt = 0, poseAction = "neutral";
+  var poseTracks = [], poseAction = "neutral";
+  function personBoxes(tracks, selected) {
+    return tracks.map((item) => ({...item, track_id: item.id ?? item.track_id,
+      label: "人体 ID " + (item.id ?? item.track_id),
+      bbox: [item.bbox[0], item.bbox[1], item.bbox[2] - item.bbox[0], item.bbox[3] - item.bbox[1]],
+      selected: (item.id ?? item.track_id) === selected}));
+  }
   const poseEdges = [[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],
     [12,24],[23,24],[23,25],[25,27],[24,26],[26,28]];
-  function drawPoses(pen, sx, sy) {
-    if (mode !== "human" || !synchronized || Date.now()-poseSeenAt > 550) return;
+  function drawPoses(pen, sx, sy, tracks) {
     pen.save(); pen.lineWidth = 2; pen.font = "600 14px sans-serif";
-    for (const track of poseTracks) {
+    for (const track of tracks) {
       const p = track.pose;
       if (!Array.isArray(p) || p.length !== 33) continue;
-      const valid = i => p[i].length >= 5 && p[i].every(Number.isFinite) && p[i][3] >= .5 && p[i][4] >= .5;
+      const valid = i => Array.isArray(p[i]) && p[i].length >= 5 && p[i].every(Number.isFinite) && p[i][3] >= .5 && p[i][4] >= .5;
       pen.strokeStyle = "#73e5d1"; pen.fillStyle = "#73e5d1";
       pen.beginPath();
       for (const [a,b] of poseEdges) {
@@ -5376,13 +5418,30 @@
     }
     pen.restore();
   }
+  let drawPending = false;
   function draw() {
+    if (drawPending) return;
+    drawPending = true;
+    requestAnimationFrame(() => {
+      drawPending = false;
+      paintOverlay();
+    });
+  }
+  function paintOverlay() {
     if (!canvas)
       return;
     const pen = canvas.getContext("2d");
     pen.clearRect(0, 0, canvas.width, canvas.height);
-    const items = !synchronized ? [] : sessionId ? lockedTrack && Date.now() - trackedAt <= 1500 ? [lockedTrack] : [] : Date.now() - detectedAt <= 1500 ? visibleDetections() : [];
-    const sx = canvas.width / frameSize[0], sy = canvas.height / frameSize[1];
+    const pose = mode === "human" ? matchedPreviewPose() : undefined;
+    const tracks = pose?.tracks ?? [];
+    let items = [];
+    if (mode === "human") items = personBoxes(tracks, personTrackId);
+    else if (synchronized) {
+      if (sessionId && lockedTrack && Date.now() - trackedAt <= 1500) items = [lockedTrack];
+      else if (!sessionId && Date.now() - detectedAt <= 1500) items = visibleDetections();
+    }
+    const [width,height] = mode === "human" ? previewSize : frameSize;
+    const sx = canvas.width / width, sy = canvas.height / height;
     pen.font = "15px sans-serif";
     pen.lineWidth = 2;
     for (const item of items) {
@@ -5396,8 +5455,17 @@
       pen.fillStyle = pen.strokeStyle;
       pen.fillText(caption, x * sx + 4, ty);
     }
-    drawGestureHands(pen, sx, sy);
-    drawPoses(pen, sx, sy);
+    if (tracks.length) drawPoses(pen, sx, sy, tracks);
+    const key = preview?.frameStampKey;
+    if (mode === "human" && key && key !== lastPosePresentationKey) {
+      lastPosePresentationKey = key;
+      const age = pose && Math.max(0, Math.round(preview.frameStamp * 1000 - pose.time));
+      posePresentationTimes.push([performance.timeOrigin + performance.now(), age ?? null, tracks.length]);
+      if (posePresentationTimes.length === 20) {
+        console.info("RGB_POSE_OVERLAY_TIMING " + JSON.stringify(posePresentationTimes));
+        posePresentationTimes.length = 0;
+      }
+    }
   }
   function cancelHumanFollow() {
     try {
@@ -5405,16 +5473,21 @@
       ui.feedback.textContent = "已发送取消跟随";
     } catch (error) { report(error); }
   }
-  function mount() {
+  function resetModeOverlay() {
+    previewPoses.clear();
+    lastPosePresentationKey = undefined;
+    posePresentationTimes.length = 0;
     gestureHands = [];
-    poseTracks = []; poseSeenAt = 0; poseAction = "neutral";
+    poseTracks = []; poseAction = "neutral";
     gestureSeenAt = handOverlaySeenAt = 0;
-    cleanup == null ? void 0 : cleanup();
     detections = [];
     detectedAt = 0;
     selectedLabel = "";
     lockedTrack = void 0;
-    context = { initialState: { caseId: caseId() }, panelElement: ui.panel, watch() {
+    draw();
+  }
+  function mount() {
+    context = { initialState: { caseId: caseId(), renderOverlay: false }, panelElement: ui.panel, watch() {
     }, subscribe() {
     }, advertise() {
     }, unadvertise() {
@@ -5431,14 +5504,21 @@
         cancelHumanFollow();
     };
     const resize = () => {
-      const ratio = (preview.naturalWidth || 640) / (preview.naturalHeight || 480), width = Math.min(ui.stage.clientWidth, ui.stage.clientHeight * ratio);
+      const ratio = (preview.naturalWidth || 640) / (preview.naturalHeight || 360);
+      const width = Math.min(ui.stage.clientWidth, ui.stage.clientHeight * ratio);
       picker.style.width = width + "px";
       picker.style.height = width / ratio + "px";
     };
     const observer = new ResizeObserver(resize);
     observer.observe(ui.stage);
     preview.addEventListener("load", resize);
-    preview.addEventListener("rgb-frame", draw);
+    const onRgbFrame = () => {
+      if (!foreground) return;
+      ui.previewWait.hidden = true;
+      draw();
+      reportFirstPreview(preview.previewSource || "ros_compressed");
+    };
+    preview.addEventListener("rgb-frame", onRgbFrame);
     let down;
     canvas.onpointerdown = (event) => {
       down = [event.clientX, event.clientY];
@@ -5456,7 +5536,8 @@
       down = void 0;
       if ((!synchronized && mode !== "human") || Math.hypot(start[0] - event.clientX, start[1] - event.clientY) > 8)
         return;
-      const box = canvas.getBoundingClientRect(), x = (event.clientX - box.x) * frameSize[0] / box.width, y = (event.clientY - box.y) * frameSize[1] / box.height;
+      const box = canvas.getBoundingClientRect(), [width, height] = mode === "human" ? previewSize : frameSize;
+      const x = (event.clientX - box.x) * width / box.width, y = (event.clientY - box.y) * height / box.height;
       const contains = ({ bbox: [left, top, width, height] }) => x >= left && y >= top && x <= left + width && y <= top + height;
       if (sessionId && mode !== "human") {
         if (!lockedTrack || Date.now() - trackedAt > 1500 || !contains(lockedTrack)) {
@@ -5469,7 +5550,8 @@
         return;
       }
       const detectionsFresh = synchronized && Date.now() - detectedAt <= 1500;
-      const hits = (detectionsFresh ? visibleDetections() : []).filter(contains).sort((a, b) => a.bbox[2] * a.bbox[3] - b.bbox[2] * b.bbox[3]);
+      const candidates = mode === "human" ? personBoxes(matchedPreviewPose()?.tracks ?? [], personTrackId) : visibleDetections();
+      const hits = (detectionsFresh ? candidates : []).filter(contains).sort((a, b) => a.bbox[2] * a.bbox[3] - b.bbox[2] * b.bbox[3]);
       if (!hits.length) {
         if (mode === "human") {
           cancelHumanFollow();
@@ -5492,25 +5574,14 @@
     cleanup = () => {
       observer.disconnect();
       preview.removeEventListener("load", resize);
-      preview.removeEventListener("rgb-frame", draw);
+      preview.removeEventListener("rgb-frame", onRgbFrame);
       dispose();
       ui.stageContent.replaceChildren();
     };
     resize();
-    if (connected)
-      subscribe();
   }
   function beginModeWait() {
     const token = ++waitSerial;
-    if (ui.modeWait.hidden) {
-      const frame = ui.heldFrame;
-      frame.hidden = !preview?.naturalWidth || preview.hidden;
-      if (!frame.hidden) {
-        frame.width = preview.naturalWidth;
-        frame.height = preview.naturalHeight;
-        frame.getContext("2d").drawImage(preview, 0, 0);
-      }
-    }
     ui.modeWaitLabel.textContent = "正在切换识别模式…";
     ui.modeWait.hidden = false;
     ui.stage.setAttribute("aria-busy", "true");
@@ -5526,6 +5597,7 @@
       if (modeReadyAt >= started) return true;
       if (request ? Date.now() >= request.deadline : performance.now() - started >= 8e3)
         throw Error("识别结果尚未就绪，可重新选择该模式");
+      if (mode !== "human") askForMobileState();
       await delay(100);
     }
     return false;
@@ -5543,7 +5615,7 @@
         ui.distanceSlider.value = min;
         ui.distanceValue.value = "";
       }
-      mount();
+      resetModeOverlay();
     }
     ui.targetName.textContent = titles[mode];
     if (mode === "human") renderHumanGuide(); else ui.modeHelp.textContent = modeHelp[mode];
@@ -5620,6 +5692,7 @@
     localStorage.setItem(lastModeKey, value);
     finishMode(request);
     modeReady = synchronized = true;
+    console.info("VISION_MODE_READY " + value + " " + Math.round(performance.now() - started));
     publish(CONTROL, { id: crypto.randomUUID(), op: "preload", case_id: caseId() });
     if (!sessionId)
       ui.feedback.textContent = mode === "human" ? "已连接" : "识别已就绪";
@@ -5631,6 +5704,11 @@
     let request = pendingMode;
     let token;
     try {
+      if (request && Date.now() >= request.deadline) {
+        finishMode(request);
+        endModeWait(waitSerial);
+        request = undefined;
+      }
       const saved = localStorage.getItem(lastModeKey);
       const hasSaved = Object.prototype.hasOwnProperty.call(titles, saved);
       const until = performance.now() + 8e3;
@@ -5638,6 +5716,7 @@
         const objectCase = runningCase === "02_07_kcf";
         if (runningPhase && (request || runningPhase !== "STOPPING") &&
             (request || !objectCase || mobileState)) break;
+        if (!mobileState) askForMobileState();
         await delay(100);
       }
       if (!connected || socket !== attempt || current !== revision) return;
@@ -5645,7 +5724,7 @@
       if (request && Date.now() >= request.deadline) {
         finishMode(request);
         endModeWait(waitSerial);
-        throw Error("识别切换超时，可重新选择该模式");
+        request = undefined;
       }
       const active = runningPhase === "RUNNING" || runningPhase === "STARTING";
       const humanCase = active && runningCase === "04_09_body_tracking";
@@ -5673,37 +5752,138 @@
   }
   var RADIO_BRIDGE = "ws://192.168.144.108:8765";
   var selectedBridge = new URLSearchParams(location.search).get("bridge") || RADIO_BRIDGE;
+  let firstPreview = false;
+  let latestPreview, latestPreviewAt = 0;
+  function showPreviewWait(message) {
+    ui.previewWaitLabel.textContent = message;
+    ui.previewWait.hidden = false;
+  }
+  function reportFirstPreview(source) {
+    if (firstPreview) return;
+    firstPreview = true;
+    requestAnimationFrame(() => requestAnimationFrame(() => console.info("RGB_FIRST_PREVIEW " + source)));
+  }
+  async function confirmVisionForeground(attempt) {
+    const sequence = foregroundSequence;
+    const id = `g20-vision-${sequence}`;
+    const deadline = performance.now() + 25000;
+    let resendAt = 0;
+    while (foreground && connected && socket === attempt && performance.now() < deadline) {
+      if (foregroundSupported === false) return;
+      if (foregroundStatus?.g20_request_id === id) {
+        if (foregroundStatus.g20_error) throw Error(foregroundStatus.g20_error);
+        if (foregroundStatus.g20_mode === "vision") {
+          if (foregroundStatus.g20_ready !== false) return foregroundStatus;
+          ui.feedback.textContent = "导航已停止，正在恢复识别…";
+        }
+      }
+      const now = performance.now();
+      if (foregroundSupported && now >= resendAt) {
+        publish(CONTROL, { id, op: "g20_foreground", mode: "vision", sequence, case_id: caseId() });
+        resendAt = now + 1000;
+      }
+      await delay(120);
+    }
+    throw Error("未确认导航已停止，可返回后重新打开视觉跟随");
+  }
   function connectVideo() {
     if (closed || videoSocket) return;
     const video = new WebSocket(selectedBridge, "foxglove.sdk.v1");
     videoSocket = video;
     const display = new FoxgloveClient({ ws: video });
-    let current, subscription, reader;
+    const feeds = new Map();
+    const createdAt = performance.now();
+    let refreshAt = createdAt;
+    const watchdog = setInterval(() => {
+      const startedWaiting = Math.max(createdAt, foregroundSince, refreshAt);
+      const receivedFrame = latestPreviewAt >= startedWaiting;
+      if (closed || !foreground || videoSocket !== video ||
+          performance.now() - (receivedFrame ? latestPreviewAt : startedWaiting) < (receivedFrame ? 3500 : 8500)) return;
+      showPreviewWait("暂未收到画面，正在刷新订阅…");
+      if (video.readyState === WebSocket.OPEN) {
+        refreshAt = performance.now();
+        for (const [subscription, feed] of [...feeds]) {
+          display.unsubscribe(subscription);
+          feeds.delete(subscription);
+          feeds.set(display.subscribe(feed.channelId), feed);
+        }
+      } else if (video.readyState === WebSocket.CONNECTING) {
+        clearInterval(watchdog);
+        video.close();
+      }
+    }, 500);
+    display.on("open", () => {
+      console.info("RGB_VIDEO_CONNECTED");
+      if (foreground && videoSocket === video) showPreviewWait("已连接，等待相机首帧…");
+    });
     display.on("advertise", (items) => {
-      const channel = items.find((item) => item.topic === RGB) ||
-        (!current && items.find((item) => item.topic === fallbackRgb));
-      if (!channel || channel.id === current?.id) return;
-      if (subscription !== undefined) display.unsubscribe(subscription);
-      current = channel;
-      reader = new import_rosmsg2_serialization.MessageReader(definitions(channel.schema));
-      subscription = display.subscribe(channel.id);
+      for (const channel of items) {
+        if (channel.topic !== RGB && channel.topic !== PREVIEW_POSE) continue;
+        if ([...feeds.values()].some((feed) => feed.channelId === channel.id)) continue;
+        feeds.set(display.subscribe(channel.id), { topic: channel.topic, channelId: channel.id,
+          reader: new import_rosmsg2_serialization.MessageReader(definitions(channel.schema)) });
+      }
     });
     display.on("unadvertise", (ids) => {
-      if (!current || !ids.includes(current.id)) return;
-      current = subscription = reader = undefined;
+      for (const [subscription, feed] of feeds) if (ids.includes(feed.channelId)) {
+        display.unsubscribe(subscription);
+        feeds.delete(subscription);
+      }
     });
     display.on("message", (event) => {
-      if (reader && event.subscriptionId === subscription)
-        window.FoxgloveVision.updateRgb(reader.readMessage(event.data));
+      if (videoSocket !== video) return;
+      const feed = feeds.get(event.subscriptionId);
+      if (!feed) return;
+      if (feed.topic !== RGB && !foreground) return;
+      const message = feed.reader.readMessage(event.data);
+      if (feed.topic === RGB) {
+        latestPreview = { ...message, previewSource: "ros_compressed" };
+        latestPreviewAt = performance.now();
+        if (foreground) window.FoxgloveVision.updateRgb(latestPreview);
+      } else {
+        const result = JSON.parse(message.data);
+        const [sec, nsec] = result.stamp.split(":").map(Number);
+        previewPoses.set(result.stamp, { time: sec * 1000 + nsec / 1e6, tracks: result.tracks });
+        while (previewPoses.size > 32) previewPoses.delete(previewPoses.keys().next().value);
+        if (mode === "human") draw();
+      }
     });
     display.on("close", () => {
+      clearInterval(watchdog);
       if (videoSocket !== video) return;
       videoSocket = undefined;
-      if (!closed) videoRetry = setTimeout(connectVideo, 500);
+      previewPoses.clear();
+      if (!closed) {
+        if (foreground) showPreviewWait("正在重连相机…");
+        videoRetry = setTimeout(connectVideo, 500);
+      }
+    });
+  }
+  function startForegroundHandoff(attempt) {
+    if (!foreground || !connected || socket !== attempt) return;
+    const sequence = foregroundSequence;
+    ui.retryHandoff.hidden = true;
+    ui.feedback.textContent = standaloneFollow ? "正在停止导航任务…" : "已连接，正在读取跟踪状态…";
+    foregroundHandoff = standaloneFollow ? confirmVisionForeground(attempt) : undefined;
+    Promise.resolve(foregroundHandoff).then((state) => {
+      if (!foreground || sequence !== foregroundSequence || socket !== attempt) return;
+      if (state) {
+        runningPhase = state.phase;
+        runningCase = state.case_id;
+        if (state.phase === "IDLE") runningRequest = undefined;
+      }
+      return synchronize(attempt);
+    }).catch((error) => {
+      if (foreground && connected && socket === attempt && sequence === foregroundSequence) {
+        if (pendingMode) finishMode(pendingMode);
+        endModeWait(waitSerial);
+        report(error);
+        ui.retryHandoff.hidden = false;
+      }
     });
   }
   function connect() {
-    if (closed)
+    if (closed || !foreground || socket)
       return;
     channels.clear();
     subscriptions.clear();
@@ -5714,22 +5894,23 @@
     const attempt = socket, timer = setTimeout(() => attempt.close(), 1e4);
     client.on("open", () => {
       clearTimeout(timer);
-      if (closed)
+      if (closed || !foreground || socket !== attempt)
         return;
       connected = true;
       synchronized = false;
       mobileState = void 0;
+      nextMobileStatusAt = 0;
       runningPhase = void 0;
       window.__followLink = selectedBridge;
       connectVideo();
       [CONTROL, MOBILE, PERSON].forEach(advertise);
-      ui.feedback.textContent = "已连接，正在读取跟踪状态…";
-      synchronize(attempt).catch((error) => {
-        if (connected && socket === attempt)
-          report(error);
-      });
+      foregroundStatus = undefined;
+      foregroundSupported = undefined;
+      startForegroundHandoff(attempt);
     });
     client.on("advertise", (items) => {
+      if (socket !== attempt) return;
+      if (items.some(item => item.topic === FOREGROUND_STATUS)) foregroundSupported = true;
       items.forEach((item) => channels.set(item.id, item));
       subscribe();
     });
@@ -5741,7 +5922,9 @@
             subscriptions.delete(sub);
       }
     });
-    client.on("advertiseServices", (items) => items.forEach((item) => services.set(item.name, item)));
+    client.on("advertiseServices", (items) => {
+      if (socket === attempt) items.forEach((item) => services.set(item.name, item));
+    });
     client.on("unadvertiseServices", (ids) => {
       for (const [name, item] of services)
         if (ids.includes(item.id))
@@ -5760,6 +5943,7 @@
       }
     });
     client.on("message", (event) => {
+      if (socket !== attempt) return;
       var _a, _b, _c, _d;
       try {
         const channel = subscriptions.get(event.subscriptionId);
@@ -5767,7 +5951,16 @@
           return;
         const message = channel.reader.readMessage(event.data);
         const state = JSON.parse(message.data);
+        if (channel.topic === FOREGROUND_STATUS) {
+          foregroundStatus = state;
+          if (!runningPhase || state.phase === "IDLE") {
+            runningPhase = state.phase;
+            runningCase = state.case_id;
+          }
+          return;
+        }
         if (channel.topic === STATUS) {
+          if (!state.g20_supported && foregroundSupported === undefined) foregroundSupported = false;
           runningCase = state.case_id;
           runningPhase = state.phase;
           runningRequest = state.request_id;
@@ -5782,7 +5975,7 @@
           }
           if (state.op === "state") {
             mobileState = state;
-            if (mode !== "human" && state.mode === mode)
+            if (mode !== "human" && state.mode === mode && state.session_id)
               modeReadyAt = performance.now();
             if (synchronized && state.mode === "off" && mode !== "human" && runningCase === caseId()) {
               applyMobileState({ ...state, mode });
@@ -5793,6 +5986,7 @@
           }
           if (state.mode !== mode || sessionId || !Array.isArray(state.detections))
             return;
+          modeReadyAt = performance.now();
           detections = state.detections.map((item, index) => ({ ...item, index }));
           detectedFrame = state.frame_id;
           detectedAt = Date.now();
@@ -5800,6 +5994,8 @@
           draw();
           return;
         }
+        if (mode === "human" ? channel.topic === KCF : channel.topic === BODY || channel.topic === HAND_OVERLAY)
+          return;
         const distance = mode === "human" ? ((_a = state.body_tracking) == null ? void 0 : _a.target_distance_m) ?? state.follow_distance_m : state.target_distance_m;
         const enabled = mode === "human" ? (_b = state.body_tracking) == null ? void 0 : _b.motion_enabled : state.enable_motion;
         if (typeof enabled === "boolean")
@@ -5818,15 +6014,16 @@
         }
         if (channel.topic === BODY && mode === "human") {
           followActive = state.body_tracking?.follow_active === true;
-          poseTracks = Array.isArray(state.tracks) ? state.tracks : [];
-          poseSeenAt = Date.now(); poseAction = state.gesture || "neutral";
+          poseTracks = Array.isArray(state.tracks) ? state.tracks.filter(({ bbox }) =>
+            Array.isArray(bbox) && bbox.length === 4 && bbox.every(Number.isFinite)) : [];
+          poseAction = state.gesture || "neutral";
           if (Date.now() - handOverlaySeenAt > 450 && (state.hands?.length || state.hand_updated))
             updateGestureHands(state);
           if (state.body_tracking && Array.isArray(state.tracks))
             modeReadyAt = performance.now();
           frameSize = state.rgb_resolution || [640, 480];
           detectedAt = Date.now();
-          detections = (state.tracks || []).map((item) => ({ ...item, track_id: item.id ?? item.track_id, label: "人体 ID " + (item.id ?? item.track_id), bbox: [item.bbox[0], item.bbox[1], item.bbox[2] - item.bbox[0], item.bbox[3] - item.bbox[1]], selected: (item.id ?? item.track_id) === state.track_id }));
+          detections = personBoxes(poseTracks, state.track_id);
           if (!motionIntent)
             ui.feedback.textContent = humanStatus(state.track_id);
           personTrackId = state.track_id;
@@ -5855,22 +6052,29 @@
     client.on("error", () => report("连接机器人失败"));
     client.on("close", () => {
       clearTimeout(timer);
+      if (socket !== attempt) return;
+      socket = undefined;
+      foregroundHandoff = undefined;
       connected = synchronized = modeReady = false;
-      if (pendingMode && !ui.modeWait.hidden)
-        ui.modeWaitLabel.textContent = "连接恢复后继续切换…";
-      else
-        endModeWait(waitSerial);
+      endModeWait(waitSerial);
       report("控制连接中断，正在重连…");
       for (const call of calls.values()) {
         clearTimeout(call.timer);
         call.reject(Error("连接已断开"));
       }
       calls.clear();
-      if (!closed)
-        setTimeout(connect, 500);
+      if (!closed && foreground)
+        controlRetry = setTimeout(connect, 500);
     });
   }
   document.querySelectorAll("[data-mode]").forEach((button) => button.onclick = () => selectMode(button.dataset.mode));
+  ui.retryHandoff.onclick = () => {
+    if (!foreground) return;
+    foregroundSequence = Date.now();
+    ui.retryHandoff.hidden = true;
+    if (connected) startForegroundHandoff(socket);
+    else connect();
+  };
   ui.filterAll.onchange = () => {
     selectedFilters[mode] = new Set(ui.filterAll.checked ? filterLabels[mode] : []);
     filtersChanged();
@@ -5918,14 +6122,73 @@
       ui.distanceValue.blur();
     }
   };
+  function disconnect() {
+    const previous = socket;
+    const video = videoSocket;
+    stopForegroundMotion();
+    socket = videoSocket = undefined;
+    foregroundHandoff = undefined;
+    connected = synchronized = modeReady = false;
+    revision++;
+    for (const call of calls.values()) {
+      clearTimeout(call.timer);
+      call.reject(Error("已离开视觉界面"));
+    }
+    calls.clear();
+    clearTimeout(videoRetry);
+    clearTimeout(controlRetry);
+    video?.close();
+    previous?.close();
+  }
+  function stopForegroundMotion() {
+    if (connected && (motion || motionIntent?.enabled)) {
+      if (mode === "human") {
+        try { publish(PERSON, { op: "cancel" }); } catch {}
+      }
+      parameter("enable_motion", false, false).catch(() => {});
+    }
+  }
+  window.omnifleetFollowForeground = (active) => {
+    if (closed || active === foreground) return;
+    foreground = active;
+    if (!active) {
+      stopForegroundMotion();
+      revision++;
+      if (pendingMode) finishMode(pendingMode);
+      endModeWait(waitSerial);
+      synchronized = modeReady = false;
+      foregroundHandoff = undefined;
+      resetModeOverlay();
+      setMotion(false);
+      if (connected) subscribe();
+    } else {
+      foregroundSequence = Date.now();
+      foregroundSince = performance.now();
+      firstPreview = false;
+      if (latestPreview && foregroundSince - latestPreviewAt < 2000) {
+        ui.previewWait.hidden = true;
+        window.FoxgloveVision.updateRgb(latestPreview);
+        console.info("RGB_RESUME_FROM_BUFFER");
+      } else {
+        showPreviewWait(videoSocket ? "正在接收实时画面…" : "正在连接相机…");
+      }
+      connectVideo();
+      if (connected) {
+        subscribe();
+        startForegroundHandoff(socket);
+      } else connect();
+    }
+  };
+  document.addEventListener("visibilitychange", () => window.omnifleetFollowForeground(!document.hidden));
   window.addEventListener("pagehide", () => {
     closed = true;
-    clearTimeout(videoRetry);
-    videoSocket?.close();
-    socket == null ? void 0 : socket.close();
+    disconnect();
+    cleanup?.();
   });
-  if (mode === "human") renderHumanGuide(); else ui.modeHelp.textContent = modeHelp[mode];
-  renderFilters();
+  const savedPreviewMode = pendingMode?.deadline > Date.now() ? pendingMode.mode : localStorage.getItem(lastModeKey);
+  showMode(Object.prototype.hasOwnProperty.call(titles, savedPreviewMode) ? savedPreviewMode : mode);
   mount();
+  window.__followLink = selectedBridge;
+  connectVideo();
   connect();
 })();

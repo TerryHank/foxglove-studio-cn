@@ -8,7 +8,7 @@ import subprocess
 import zipfile
 
 app = Path(__file__).resolve().parents[1]
-build = app / 'build'
+build = Path(os.environ.get('OMNIFLEET_ANDROID_BUILD_DIR', app / 'build'))
 sdk = Path(os.environ.get('ANDROID_SDK_ROOT') or os.environ['ANDROID_HOME'])
 tools = sdk / 'build-tools/35.0.0'
 android = sdk / 'platforms/android-35/android.jar'
@@ -22,7 +22,7 @@ variants = [
 versions = {
     'navigation': ('18', '1.3.3-lan-receiver-ui'),
     'wifi': ('4', '1.2-foxglove-theme-receiver-ui'),
-    'follow': ('38', '1.8-object-session-receiver-ui'),
+    'follow': ('60', '1.9.17-continuous-pose-overlay'),
 }
 def run(*args, **kwargs):
     return subprocess.run([str(a) for a in args], check=True, **kwargs)
@@ -61,7 +61,9 @@ for name, label, activity, color, symbol in variants:
         entry.write_text(html.replace('</body>', '<script src="./navigation-startup.js"></script></body>', 1),
                          encoding='utf-8')
     elif name == 'follow':
-        for file in ('vision-follow.html', 'vision-follow.js', 'vision-reference.js', 'LICENSE', 'NOTICE', 'NOTICE.android.txt'):
+        for file in ('vision-follow.html', 'vision-follow.js', 'vision-reference.js'):
+            shutil.copy2(app / 'vision' / file, assets / file)
+        for file in ('LICENSE', 'NOTICE', 'NOTICE.android.txt'):
             shutil.copy2(app / 'src/main/assets/www' / file, assets / file)
     manifest = stage / 'AndroidManifest.xml'
     manifest.write_text(f'''<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="dev.terryhank.robot.{name}">

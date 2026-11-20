@@ -34,6 +34,10 @@
       if(bitmapContext)bitmapContext.transferFromImageBitmap(bitmap);
       else {imageContext.drawImage(bitmap,0,0);bitmap.close();}
       sharedRgb.frameStamp=frame.source/1000;
+      const stamp=frame.message.header?.stamp;
+      sharedRgb.frameStampKey=stamp ? stamp.sec+":"+(stamp.nanosec??stamp.nsec??0) : "";
+      sharedRgb.previewSource=frame.message.previewSource||'jpeg';
+      sharedRgb.presentedAt=performance.now();
       sharedRgb.hidden=false;
       sharedRgb.dispatchEvent(new Event('rgb-frame'));
       if(resized)sharedRgb.dispatchEvent(new Event('load'));
@@ -187,7 +191,7 @@
       pen.strokeRect(kcfDrag[0],kcfDrag[1],end[0]-kcfDrag[0],end[1]-kcfDrag[1]);
     }
     function drawOverlay() {
-      if(kcfDrag)return;
+      if(kcfDrag||context.initialState?.renderOverlay===false)return;
       const canvas=ui.kcfCanvas,pen=canvas.getContext('2d');
       pen.clearRect(0,0,canvas.width,canvas.height);
       if(!overlay||!kcfImageStamp||Math.abs(overlay.stamp-kcfImageStamp)>.5)return;
