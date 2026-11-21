@@ -1,0 +1,2 @@
+artifact_name	dpkg_package	dpkg_version	dpkg_architecture	size_bytes	sha256	source_relative_path
+foxglove-studio-cn_1.86.0-cn.8_arm64.deb	foxglove-studio-cn-desktop	1.86.0~cn.8	arm64	130950280	7b11cb8fd7a5fd70d41099d18b2d55bcaa42d6d914b214b4549469909566dd09	desktop-cn/dist/foxglove-studio-cn_1.86.0-cn.8_arm64.deb

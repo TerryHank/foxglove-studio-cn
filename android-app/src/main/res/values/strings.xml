@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">Foxglove 中文测试版</string>
+    <style name="AppTheme" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:colorAccent">#A78BFA</item>
+        <item name="android:statusBarColor">#15151A</item>
+        <item name="android:navigationBarColor">#15151A</item>
+        <item name="android:colorButtonNormal">#33333B</item>
+        <item name="android:colorControlNormal">#A99DC4</item>
+        <item name="android:textColorPrimary">#E1E1E4</item>
+        <item name="android:textColorSecondary">#ADADB5</item>
+        <item name="android:colorBackground">#15151A</item>
+        <item name="android:windowBackground">#15151A</item>
+    </style>
+</resources>

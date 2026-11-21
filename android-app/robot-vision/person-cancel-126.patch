@@ -1,0 +1,132 @@
+--- a/src/perception/body_tracking/include/body_tracking.h
++++ b/src/perception/body_tracking/include/body_tracking.h
+@@ -33,6 +33,7 @@
+ #include "include/smart_subscriber.h"
+ #include "rclcpp/rclcpp.hpp"
+ #include "rclcpp_action/rclcpp_action.hpp"
++#include "std_msgs/msg/empty.hpp"
+ 
+ class TrackingManager {
+  public:
+@@ -63,6 +64,7 @@
+   // check if robot needs rotate
+ 
+   void CancelMove();
++  void CancelTracking();
+ 
+   void DoRotateMove();
+   void UpdateDepthBackoff(const ai_msgs::msg::PerceptionTargets::ConstSharedPtr &msg);
+@@ -85,6 +87,7 @@
+ 
+   std::shared_ptr<ParametersClass> param_node_ = nullptr;
+   std::shared_ptr<RobotCmdVelNode> robot_cmdvel_node_ = nullptr;
++  rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr cancel_subscription_;
+ 
+   TrackInfo track_info_;
+   TrackCfg track_cfg_;
+@@ -93,6 +96,7 @@
+ 
+   size_t queue_len_limit_ = 2;
+   std::queue<ai_msgs::msg::PerceptionTargets::ConstSharedPtr> smart_queue_;
++  bool cancel_requested_ = false;
+   std::mutex smart_queue_mtx_;
+   std::condition_variable smart_queue_condition_;
+ 
+--- a/src/perception/body_tracking/src/body_tracking.cpp
++++ b/src/perception/body_tracking/src/body_tracking.cpp
+@@ -44,6 +44,15 @@
+   robot_cmdvel_node_ =
+       std::make_shared<RobotCmdVelNode>("horizon_tracking_RobotCmdVel");
+ 
++  cancel_subscription_ = robot_cmdvel_node_->create_subscription<std_msgs::msg::Empty>(
++      "/vision/body_tracking/cancel", 10,
++      [this](std_msgs::msg::Empty::ConstSharedPtr) {
++        std::lock_guard<std::mutex> lock(smart_queue_mtx_);
++        smart_queue_ = {};
++        cancel_requested_ = true;
++        smart_queue_condition_.notify_one();
++      });
++
+   last_frame_done_ = true;
+ 
+   if (!smart_process_task_) {
+@@ -51,9 +60,18 @@
+       while (start_ && rclcpp::ok()) {
+         std::unique_lock<std::mutex> lg(smart_queue_mtx_);
+         smart_queue_condition_.wait_for(lg, std::chrono::seconds(1), [&]() {
+-          return !smart_queue_.empty() || !rclcpp::ok() || !start_;
++          return cancel_requested_ || !smart_queue_.empty() || !rclcpp::ok() || !start_;
+         });
+-        if (smart_queue_.empty() || !rclcpp::ok() || !start_) {
++        if (!rclcpp::ok() || !start_) {
++          continue;
++        }
++        if (cancel_requested_) {
++          cancel_requested_ = false;
++          lg.unlock();
++          CancelTracking();
++          continue;
++        }
++        if (smart_queue_.empty()) {
+           continue;
+         }
+         auto smart_frame = std::move(smart_queue_.front());
+@@ -201,6 +219,19 @@
+   last_cmdvel_is_cancel_ = true;
+   last_cmdvel_type_ = -1;
+   last_move_step_ratio_ = 1.0;
++}
++
++void TrackingManager::CancelTracking() {
++  robot_cmdvel_node_->StopRotation();
++  track_info_.~TrackInfo();
++  new (&track_info_) TrackInfo();
++  last_motion_gesture_ = gesture_motion_ = 0;
++  bearing_valid_ = false;
++  centering_.Update(-1, 0., 0.);
++  depth_backoff_.Observe(-1, false, 0.);
++  CancelMove();
++  robot_cmdvel_node_->PublishTrackingState(
++      track_info_, robot_cmdvel_node_->now(), depth_backoff_, centering_, GestureMotion());
+ }
+ 
+ void TrackingManager::ProcessSmart(
+--- a/src/perception/omnifleet_person_follow/omnifleet_person_follow/body_adapter.py
++++ b/src/perception/omnifleet_person_follow/omnifleet_person_follow/body_adapter.py
+@@ -5,7 +5,7 @@
+ import numpy as np
+ from ai_msgs.msg import Attribute, PerceptionTargets, Roi, Target
+ from geometry_msgs.msg import Twist
+-from std_msgs.msg import Header, String
++from std_msgs.msg import Empty, Header, String
+ from rclpy.time import Time
+ from visualization_msgs.msg import Marker, MarkerArray
+ 
+@@ -72,17 +72,25 @@
+         self.input_frames, self.command_at = 0, None
+         self.click_target, self.click_until, self.visible_ids = None, 0., set()
+         node.create_subscription(String, '/vision/person_follow/control', self.on_click, 10)
++        self.cancel_pub = node.create_publisher(Empty, '/vision/body_tracking/cancel', 10)
+         self.command = dict(linear_x=0., angular_z=0.)
+         self.input_pub = node.create_publisher(PerceptionTargets, '/vision/body_tracking/targets', 1)
+         node.create_subscription(String, '/vision/body_tracking/native_status', self.on_state, 1)
+         node.create_subscription(Twist, '/vision/body_tracking/cmd_vel', self.on_command, 1)
+-        node.operator_message = '1前进、2后退；3顺时针一圈、4逆时针一圈，转完停车；五指张掌停止'
++        node.operator_message = '点人物框或做 OK 手势绑定；点画面空白处或张开五指取消绑定'
+         node.goal_marker_pub.publish(MarkerArray(markers=[Marker(header=Header(frame_id=node.global_frame),action=Marker.DELETEALL)]))
+ 
+     def on_click(self, message):
+         try:
+             request = json.loads(message.data)
+-            if request.get('op') != 'lock':
++            op = request.get('op')
++            if op == 'cancel':
++                with self.node.lock:
++                    self.click_target, self.click_until = None, 0.
++                    self.cancel_pub.publish(Empty())
++                    self.node.operator_message = '已请求解除人体绑定'
++                return
++            if op != 'lock':
+                 return
+             identity = int(request['track_id'])
+             with self.node.lock:

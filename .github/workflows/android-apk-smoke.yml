@@ -1,0 +1,110 @@
+name: Android APK packaged Web smoke test
+on:
+  push:
+    branches: ['build/android-apk-20261105']
+    paths: ['.github/workflows/android-apk-smoke.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: foxglove-studio-cn-android-test
+          run-id: 41961381915
+          github-token: ${{ github.token }}
+          path: .mobile-smoke/artifact
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install test-only browser dependencies
+        run: |
+          python -m pip install playwright==1.51.0 websockets==15.0.1
+          python -m playwright install --with-deps chromium
+      - name: Verify APK checksum and prepare real asset server
+        run: |
+          cd .mobile-smoke/artifact
+          sha256sum -c SHA256SUMS.txt
+          cd ../..
+          unzip -q .mobile-smoke/artifact/foxglove-studio-cn-android-test.apk -d .mobile-smoke/apk
+          bash android-app/test-server.sh
+          mkdir -p .mobile-smoke/classes .mobile-smoke/results
+          cat > .mobile-smoke/ServeBuiltAssets.java <<'JAVA'
+          package dev.terryhank.foxglove.cn;
+          import java.nio.file.*;
+          public class ServeBuiltAssets {
+            public static void main(String[] args) throws Exception {
+              Path base=Paths.get(args[0]);
+              try(LocalAssetServer server=new LocalAssetServer(p -> Files.newInputStream(base.resolve(p)),18765)) {
+                System.out.println(server.origin()); System.out.flush(); Thread.sleep(180000);
+              }
+            }
+          }
+          JAVA
+          javac --release 8 -d .mobile-smoke/classes android-app/src/main/java/dev/terryhank/foxglove/cn/LocalAssetServer.java .mobile-smoke/ServeBuiltAssets.java
+      - name: Load APK Web UI with Android user-agent and connect to mock bridge
+        run: |
+          cat > .mobile-smoke/test.py <<'PY'
+          from pathlib import Path
+          import json, threading, subprocess, urllib.parse
+          from playwright.sync_api import sync_playwright
+          from websockets.sync.server import serve
+          root=Path('.mobile-smoke').resolve()
+          out=root/'results'
+          events=[]
+          def handler(ws):
+              events.append({'event':'connected','subprotocol':ws.subprotocol})
+              ws.send(json.dumps({'op':'serverInfo','name':'APK validation mock','capabilities':[],'supportedEncodings':['json'],'metadata':{}}))
+              ws.send(json.dumps({'op':'advertise','channels':[{'id':1,'topic':'/android_apk_test','encoding':'json','schemaName':'AndroidApkTest','schemaEncoding':'jsonschema','schema':json.dumps({'type':'object','properties':{'value':{'type':'number'}}})}]}))
+              try:
+                  for msg in ws:
+                      if isinstance(msg,str): events.append({'event':'client_message','value':msg})
+              except Exception as e: events.append({'event':'closed','type':type(e).__name__})
+          mock=serve(handler,'127.0.0.1',8765,subprotocols=['foxglove.websocket.v1','foxglove.sdk.v1'])
+          threading.Thread(target=mock.serve_forever,daemon=True).start()
+          server=subprocess.Popen(['java','-cp',str(root/'classes'),'dev.terryhank.foxglove.cn.ServeBuiltAssets',str(root/'apk/assets/www')],stdout=subprocess.PIPE,text=True)
+          origin=server.stdout.readline().strip()
+          report={'not_an_android_emulator':True,'pages':[]}
+          try:
+              with sync_playwright() as p:
+                  browser=p.chromium.launch(headless=True,args=['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader'])
+                  context=browser.new_context(viewport={'width':1280,'height':800},has_touch=True,is_mobile=True,locale='zh-CN',user_agent='Mozilla/5.0 (Linux; Android 14; TestTablet; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/134.0.0.0 Safari/537.36')
+                  page=context.new_page()
+                  logs=[];errors=[];failed=[]
+                  page.on('console',lambda m:logs.append({'type':m.type,'text':m.text}))
+                  page.on('pageerror',lambda e:errors.append(str(e)))
+                  page.on('requestfailed',lambda r:failed.append({'url':r.url,'failure':r.failure}))
+                  for label,url in [('initial',origin+'/'),('mock-bridge',origin+'/?'+urllib.parse.urlencode({'ds':'foxglove-websocket','ds.url':'ws://127.0.0.1:8765'}))]:
+                      logs.clear(); errors.clear(); failed.clear()
+                      page.goto(url,wait_until='load',timeout=45000)
+                      for attempt in range(30):
+                          if any(x['text']=='App rendered' for x in logs): break
+                          page.wait_for_timeout(500)
+                      page.wait_for_timeout(2000)
+                      page.screenshot(path=str(out/f'{label}.png'),full_page=True)
+                      report['pages'].append({'label':label,'title':page.title(),'body':page.locator('body').inner_text()[:12000],'has_rendered_log':any(x['text']=='App rendered' for x in logs),'errors':list(errors),'console':list(logs),'failed_requests':list(failed),'capabilities':page.evaluate('({isSecureContext,crossOriginIsolated,offscreen:typeof HTMLCanvasElement.prototype.transferControlToOffscreen,webgl2:!!document.createElement("canvas").getContext("webgl2")})')})
+                  browser.close()
+          finally:
+              server.terminate();server.wait(timeout=5);mock.shutdown()
+              report['websocket_events']=events
+              (out/'browser-smoke.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))
+          print(json.dumps(report,ensure_ascii=False,indent=2))
+          assert len(report['pages'])==2 and all(x['has_rendered_log'] for x in report['pages']), 'Application did not render'
+          assert all(not x['errors'] for x in report['pages']), 'JavaScript runtime error'
+          assert any(x['event']=='connected' for x in events), 'Mock WebSocket connection failed'
+          PY
+          python .mobile-smoke/test.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: foxglove-android-web-smoke-results
+          path: .mobile-smoke/results/
+          if-no-files-found: warn
+          retention-days: 30

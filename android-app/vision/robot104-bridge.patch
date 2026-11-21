@@ -1,0 +1,7 @@
+--- a/etc/omnifleet_t2/foxglove.yaml
++++ b/etc/omnifleet_t2/foxglove.yaml
+@@ -1,2 +1,2 @@
+-      message_backlog_size: 8
+-      send_buffer_limit: 2000000
++      message_backlog_size: 128
++      send_buffer_limit: 8000000

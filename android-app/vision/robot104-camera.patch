@@ -1,0 +1,6 @@
+--- a/src/sensing/orbbec_camera/launch/astra_stereo_u3.launch.py
++++ b/src/sensing/orbbec_camera/launch/astra_stereo_u3.launch.py
+@@ -76,2 +76,3 @@
+     parameters = [{arg.name: LaunchConfiguration(arg.name)} for arg in args]
++    parameters += [{'color.image_raw.enable_pub_plugins': ['image_transport/raw']}]
+     # get  ROS_DISTRO
